@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: true, // 포트 충돌 시 다른 포트로 변경되지 않음
     proxy: {
       '/api': {
-        target: 'http://localhost:80', // Spring Boot 서버 주소
+        target: 'http://localhost:8000', // Spring Boot 서버 주소
         changeOrigin: true,
         // pathRewrite: { '^/api': '' }, // '/api'를 지우고 Spring Boot로 요청
       },

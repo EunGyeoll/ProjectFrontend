@@ -31,33 +31,41 @@
 
 <script>
 import { ref } from "vue";
-import { useAuthStore } from "@/stores/authStore";  // authStore 가져오기
+import { useAuthStore } from "@/stores/authStore";
+import { login } from "@/apis/authApi"; // ✅ 서버 API 추가
+
 
 export default {
   setup() {
-    const id = ref("");  // 아이디로 변경
+    const id = ref("");
     const password = ref("");
-    const authStore = useAuthStore();  // authStore 사용
+    const authStore = useAuthStore();
 
     const handleLogin = async () => {
       if (id.value && password.value) {
         try {
-          // 서버에서 로그인 요청 보내기 (예: 아이디와 비밀번호를 사용)
-          // 예시로 mock된 토큰과 데이터를 사용합니다.
-          const mockToken = "mock-jwt-token";  // 실제 서버에서 받은 JWT 토큰
-          const mockUserData = {
-            id: id.value,  // 아이디로 변경
-            role: "user",  // 예시로 "user"로 설정
-            token: mockToken,
+          const requestData = { // 백엔드의 LoginRuest 필드명과 일치시키기
+            memberId: id.value,
+            password: password.value,
           };
 
-          // authStore에 로그인 정보 저장
-          authStore.saveAuth(mockUserData);  // ID, Role, Token을 저장
+          const response = await login(requestData); // ✅ 서버에 로그인 요청
+          const { token, memberId, role } = response.data; // ✅ 서버 응답 구조 맞게 꺼냄
+
+          const userData = {
+            id: memberId,
+            role: role,
+            token: token,
+          };
+
+          authStore.saveAuth(userData);
+          localStorage.setItem("token", token); // 로컬스토리지에도 저장
 
           alert("로그인 성공!");
-          window.location.href = "/"; // 로그인 성공 후 메인 페이지로 이동
+          window.location.href = "/";
         } catch (error) {
-          alert("로그인에 실패했습니다.");
+          console.error("로그인 실패:", error.response?.data || error.message);
+          alert("로그인 실패: " + (error.response?.data?.message || error.message));
         }
       } else {
         alert("아이디와 비밀번호를 입력하세요.");
@@ -65,7 +73,7 @@ export default {
     };
 
     return {
-      id,  // 아이디로 바뀐 변수
+      id,
       password,
       handleLogin,
     };
@@ -73,13 +81,13 @@ export default {
 };
 </script>
 
+
 <style scoped>
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  //background-color: #f0f2f5;
 } 
 
 .login-box {

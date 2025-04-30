@@ -1,7 +1,7 @@
 <template>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-      <router-link class="navbar-brand" to="/">MyShop</router-link>
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+      <router-link class="navbar-brand" to="/">카테고리</router-link>
       <button
           class="navbar-toggler"
           type="button"
@@ -16,16 +16,17 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <router-link class="nav-link" to="/">Home</router-link>
+            <router-link class="nav-link" to="/">커뮤니티</router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" to="/create">Create Product</router-link>
+            <router-link class="nav-link" to="/">찜한 상품</router-link>
           </li>
         </ul>
       </div>
     </div>
   </nav>
 </template>
+
 
 <script>
 export default {
@@ -35,6 +36,7 @@ export default {
 
 <style scoped>
 .navbar {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ddd; 
 }
 </style>

@@ -3,10 +3,9 @@
     <!-- 공통 헤더 -->
     <Header />
 
-    <!-- 공통 네비게이션 바 -->
-    <NavBar />
+    <NavBar/>
 
-    <!-- 라우터 뷰 -->
+    <!-- 메인 콘텐츠 -->
     <main class="main-content">
       <router-view />
     </main>
@@ -16,17 +15,29 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import Header from './components/common/Header.vue';
 import Footer from './components/common/Footer.vue';
-import NavBar from './components/common/NavBar.vue';
+import NavBar from "@/components/common/NavBar.vue";
+import { onMounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
 
-export default {
-  name: 'App',
-  components: {
-    Header,
-    Footer,
-    NavBar, // NavBar 컴포넌트 추가
-  },
-};
+const authStore = useAuthStore();
+
+onMounted(() => {
+  authStore.restoreAuth(); // ✨ 자동 로그인 복구
+});
 </script>
+
+<style scoped>
+#app {
+  font-family: 'Arial', sans-serif;
+  color: #333;
+}
+
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+</style>
