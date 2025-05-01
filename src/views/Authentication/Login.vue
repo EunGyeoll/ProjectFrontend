@@ -6,23 +6,29 @@
         <div class="form-group">
           <label for="id">아이디</label>
           <input
-              v-model="id"
-              type="text"
-              id="id"
-              placeholder="아이디를 입력하세요"
-              required
+            v-model="id"
+            type="text"
+            id="id"
+            placeholder="아이디를 입력하세요"
+            required
           />
         </div>
-        <div class="form-group">
-          <label for="password">비밀번호</label>
-          <input
-              v-model="password"
-              type="password"
-              id="password"
-              placeholder="비밀번호를 입력하세요"
-              required
-          />
-        </div>
+        <div class="form-group password-group">
+  <label for="password">비밀번호</label>
+  <div class="password-wrapper">
+    <input
+      v-model="password"
+      :type="showPassword ? 'text' : 'password'"
+      id="password"
+      placeholder="비밀번호를 입력하세요"
+      required
+    />
+    <button type="button" class="toggle-btn" @click="showPassword = !showPassword">
+      {{ showPassword ? '👁‍🗨' : '👁' }}
+    </button>
+  </div>
+</div>
+
         <button type="submit" class="btn-submit">로그인</button>
       </form>
     </div>
@@ -32,25 +38,26 @@
 <script>
 import { ref } from "vue";
 import { useAuthStore } from "@/stores/authStore";
-import { login } from "@/apis/authApi"; // ✅ 서버 API 추가
-
+import { login } from "@/apis/authApi";
 
 export default {
   setup() {
     const id = ref("");
     const password = ref("");
+    const showPassword = ref(false); // ✅ 보기/숨기기 상태
+
     const authStore = useAuthStore();
 
     const handleLogin = async () => {
       if (id.value && password.value) {
         try {
-          const requestData = { // 백엔드의 LoginRuest 필드명과 일치시키기
+          const requestData = {
             memberId: id.value,
             password: password.value,
           };
 
-          const response = await login(requestData); // ✅ 서버에 로그인 요청
-          const { token, memberId, role } = response.data; // ✅ 서버 응답 구조 맞게 꺼냄
+          const response = await login(requestData);
+          const { token, memberId, role } = response.data;
 
           const userData = {
             id: memberId,
@@ -59,7 +66,7 @@ export default {
           };
 
           authStore.saveAuth(userData);
-          localStorage.setItem("token", token); // 로컬스토리지에도 저장
+          localStorage.setItem("token", token);
 
           alert("로그인 성공!");
           window.location.href = "/";
@@ -75,11 +82,13 @@ export default {
     return {
       id,
       password,
+      showPassword, 
       handleLogin,
     };
   },
 };
 </script>
+
 
 
 <style scoped>
@@ -140,4 +149,29 @@ export default {
 .btn-submit:hover {
   background-color: #0056b3;
 }
+
+.password-group {
+  position: relative;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.toggle-btn:hover {
+  opacity: 0.7;
+}
+
 </style>

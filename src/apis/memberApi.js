@@ -10,6 +10,7 @@ function updateMemberInfo(formData) {
 
 function getMyProfile() {
     return axiosInstance.get("/api/members/me");
-  }
+}
+
 
 export { updateMemberInfo , getMyProfile};

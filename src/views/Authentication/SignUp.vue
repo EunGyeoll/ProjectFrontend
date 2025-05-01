@@ -7,12 +7,40 @@
         <div class="form-group">
           <label for="memberId">아이디</label>
           <input v-model="member.memberId" type="text" id="memberId" placeholder="5자 이상" required />
+          <button type="button" @click="checkId">중복 확인</button>
         </div>
 
         <div class="form-group">
           <label for="password">비밀번호</label>
-          <input v-model="member.password" type="password" id="password" placeholder="8자 이상 (영문+숫자+특수문자)" required />
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              v-model="member.password"
+              id="password"
+              placeholder="8자 이상 (영문+숫자+특수문자)"
+              required
+            />
+            <button type="button" @click="showPassword = !showPassword" style="white-space: nowrap;">
+              {{ showPassword ? '숨기기' : '보기' }}
+            </button>
+          </div>
         </div>
+
+        <div class="form-group">
+  <label for="passwordConfirm">비밀번호 확인</label>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <input
+      :type="showPassword ? 'text' : 'password'"
+      v-model="member.passwordConfirm"
+      id="passwordConfirm"
+      placeholder="비밀번호를 다시 입력하세요"
+      required
+    />
+    <button type="button" @click="showPassword = !showPassword" style="white-space: nowrap;">
+      {{ showPassword ? '숨기기' : '보기' }}
+    </button>
+  </div>
+</div>
 
         <div class="form-group">
           <label for="memberName">이름</label>
@@ -22,11 +50,7 @@
         <div class="form-group">
           <label for="nickName">닉네임</label>
           <input v-model="member.nickName" type="text" id="nickName" placeholder="닉네임을 입력하세요" required />
-        </div>
-
-        <div class="form-group">
-          <label for="email">이메일</label>
-          <input v-model="member.email" type="email" id="email" placeholder="이메일을 입력하세요" required />
+          <button type="button" @click="checkNick">중복 확인</button>
         </div>
 
         <div class="form-group">
@@ -36,7 +60,18 @@
 
         <div class="form-group">
           <label for="phoneNum">전화번호</label>
-          <input v-model="member.phoneNum" type="text" id="phoneNum" placeholder="전화번호를 입력하세요" required />
+          <input
+            v-model="member.phoneNum"
+            @input="e => member.phoneNum = e.target.value.replace(/[^0-9]/g, '')"
+            maxlength="11"
+          />
+          <button type="button" @click="checkPhoneNum">중복 확인</button>
+        </div>
+
+        <div class="form-group">
+          <label for="email">이메일</label>
+          <input v-model="member.email" type="email" id="email" placeholder="이메일을 입력하세요" required />
+          <button type="button" @click="checkEmail">중복 확인</button>
         </div>
 
         <div class="form-group">
@@ -73,15 +108,22 @@
 
 <script>
 import { ref, reactive, onMounted } from "vue";
-import { join } from "@/apis/authApi";
+import {
+  join,
+  checkDuplicateId,
+  checkDuplicateNickName,
+  checkDuplicateEmail,
+  checkDuplicatePhoneNum,
+} from "@/apis/authApi";
 
-const defaultProfileImage = '/profileblack.png';
+const defaultProfileImage = "/profileblack.png";
 
 export default {
   setup() {
     const member = reactive({
       memberId: "",
       password: "",
+      passwordConfirm: "", 
       memberName: "",
       nickName: "",
       email: "",
@@ -94,6 +136,53 @@ export default {
     });
 
     const profileImagePreview = ref(null);
+    const showPassword = ref(false); //  비밀번호 보기 토글
+
+    const checkId = async () => {
+      const trimmedId = member.memberId?.trim();
+      if (!trimmedId) return alert("아이디를 입력하세요.");
+      if (trimmedId.length < 5) return alert("아이디는 5자 이상 입력해야 합니다.");
+      try {
+        const res = await checkDuplicateId(trimmedId);
+        alert(res.data.message);
+      } catch (err) {
+        alert(err.response?.data?.message || "아이디 중복확인 실패");
+      }
+    };
+
+    const checkNick = async () => {
+      const trimmedNick = member.nickName?.trim();
+      if (!trimmedNick) return alert("닉네임을 입력하세요.");
+      if (trimmedNick.length < 2) return alert("닉네임은 2자 이상 입력해야 합니다.");
+      try {
+        const res = await checkDuplicateNickName(trimmedNick);
+        alert(res.data.message);
+      } catch (err) {
+        alert(err.response?.data?.message || "닉네임 중복 확인 실패");
+      }
+    };
+
+    const checkEmail = async () => {
+      const email = member.email?.trim();
+      if (!email || !email.includes("@")) return alert("올바른 이메일을 입력하세요.");
+      try {
+        const res = await checkDuplicateEmail(email);
+        alert(res.data.message);
+      } catch (err) {
+        alert(err.response?.data?.message || "이메일 중복 확인 실패");
+      }
+    };
+
+    const checkPhoneNum = async () => {
+      const phone = member.phoneNum?.trim();
+      if (!phone || !/^\d{10,11}$/.test(phone)) return alert("올바른 전화번호를 입력하세요.");
+      try {
+        const res = await checkDuplicatePhoneNum(phone);
+        alert(res.data.message);
+      } catch (err) {
+        alert(err.response?.data?.message || "전화번호 중복 확인 실패");
+      }
+    };
 
     const handleFileChange = (event) => {
       const file = event.target.files[0];
@@ -104,7 +193,7 @@ export default {
       }
 
       const maxSize = 5 * 1024 * 1024;
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
 
       if (!allowedTypes.includes(file.type)) {
         alert("지원하지 않는 파일 형식입니다. (jpg, png, gif만 허용)");
@@ -123,6 +212,19 @@ export default {
     };
 
     const handleSignUp = async () => {
+      // 비밀번호 정규식 검사 (8~15자, 영문+숫자+특수문자)
+      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=])[A-Za-z\d!@#$%^&*()_+=]{8,15}$/;
+      if (!passwordRegex.test(member.password)) {
+        alert("비밀번호는 8~15자이며, 영문+숫자+특수문자를 포함해야 합니다.");
+        return;
+      }
+
+      // 비밀번호 확인 검사
+      if (member.password !== member.passwordConfirm) {
+        alert("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+      
       try {
         const formData = new FormData();
         const memberData = {
@@ -141,16 +243,15 @@ export default {
         };
 
         formData.append("memberData", new Blob([JSON.stringify(memberData)], { type: "application/json" }));
-
         if (member.profileImage) {
           formData.append("profileImage", member.profileImage);
         }
 
         const response = await join(formData);
         alert(response.data);
-        Object.keys(member).forEach(key => member[key] = "");
+        Object.keys(member).forEach((key) => (member[key] = ""));
         profileImagePreview.value = null;
-        window.location.href = '/login';
+        window.location.href = "/login";
       } catch (error) {
         console.error("회원가입 실패:", error.response?.data || error.message);
         alert("회원가입 실패: " + (error.response?.data?.message || error.message));
@@ -165,8 +266,8 @@ export default {
             member.mainAddress = data.address;
           },
         }).open({
-          left: (window.innerWidth / 2) - 200,
-          top: (window.innerHeight / 2) - 300,
+          left: window.innerWidth / 2 - 200,
+          top: window.innerHeight / 2 - 300,
         });
       } catch (error) {
         console.error("우편번호 검색창 열기 실패:", error);
@@ -212,6 +313,11 @@ export default {
       handleFileChange,
       profileImagePreview,
       defaultProfileImage,
+      checkId,
+      checkNick,
+      checkEmail,
+      checkPhoneNum,
+      showPassword, 
     };
   },
 };
