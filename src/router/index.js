@@ -24,7 +24,30 @@ const routes = [
     name: 'ItemCreate',
     component: () => import('@/views/item/ItemForm.vue'),
     meta: { requiresAuth: true } // 로그인한 사용자만 접근 가능하게
+  },
+  {
+    path: '/items/:id',
+    name: 'ItemDetail',
+    component: () => import('@/views/item/ItemDetail.vue'),
+  },  
+  {
+    path: '/posts',
+    name: 'Posts',
+    component: () => import('@/views/post/PostView.vue'),
+    meta: { requiresAuth: true } // 로그인한 사용자만 접근 가능하게
+  },
+  {
+    path: '/posts/new',
+    name: 'PostCreate',
+    component: () => import('@/views/post/PostForm.vue'),
+    meta: { requiresAuth: true } // 로그인한 사용자만 접근 가능하게
+  },
+  {
+    path: '/posts/:id',
+    name: 'PostDetail',
+    component: () => import('@/views/post/postDetail.vue')
   }
+  
   
   
 ];

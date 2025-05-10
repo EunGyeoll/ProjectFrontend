@@ -15,7 +15,7 @@
       <nav class="navigation">
         <template v-if="isLoggedIn">
           <span class="welcome-text">
-            안녕하세요, <strong>{{ userId }}</strong>님
+            <strong>{{ userId }}</strong>님
           </span>
           <router-link :to="`/mypage/${userId}`">마이페이지</router-link>
           <button @click="handleLogout" class="btn btn-outline-secondary">로그아웃</button>

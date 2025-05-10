@@ -6,9 +6,9 @@
       <div class="nav-items" :class="{ open: isOpen }">
         <router-link class="nav-item" to="/">홈</router-link>
 
-        <!-- 커뮤니티: 게시글 카테고리 -->
+        <!-- 커뮤니티 -->
         <div class="nav-item dropdown">
-          <span class="dropdown-toggle">커뮤니티</span>
+          <router-link class="dropdown-toggle" to="/posts">커뮤니티</router-link>
           <div class="dropdown-menu">
             <router-link
               v-for="cat in postCategories"
@@ -21,9 +21,9 @@
           </div>
         </div>
 
-        <!-- 아이템: 아이템 카테고리 트리 -->
+        <!-- 아이템 -->
         <div class="nav-item dropdown">
-          <span class="dropdown-toggle">아이템</span>
+          <router-link class="dropdown-toggle" to="/items">아이템</router-link>
           <div class="dropdown-menu">
             <template v-for="cat in itemCategoryTree" :key="cat.categoryId">
               <router-link
@@ -53,9 +53,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axiosInstance from '@/plugin/axiosInstance';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
 const isOpen = ref(false);
 const postCategories = ref([]);
 const itemCategoryTree = ref([]);
@@ -84,9 +82,7 @@ onMounted(() => {
 });
 </script>
 
-
 <style scoped>
-/* 기존 스타일 그대로 유지 */
 .navbar {
   background-color: #fff;
   border-bottom: 1px solid #e0e0e0;
@@ -132,17 +128,14 @@ onMounted(() => {
 
 .router-link-active {
   color: #ff84a2;
-  /* font-weight: bold; */
 }
 
 .dropdown {
   position: relative;
-  cursor: pointer;
 }
 
-.dropdown-toggle::after {
-  content: ' ';
-  font-size: 12px;
+.dropdown-toggle {
+  cursor: pointer;
 }
 
 .dropdown-menu {
@@ -173,13 +166,13 @@ onMounted(() => {
   color: #ff84a2;
 }
 
-
 .dropdown-item.child-item {
   padding-left: 24px;
   font-size: 14px;
   color: #666;
 }
 
+/* 모바일 반응형 */
 @media (max-width: 768px) {
   .menu-toggle {
     display: block;
@@ -201,4 +194,11 @@ onMounted(() => {
     padding-left: 12px;
   }
 }
+
+.nav-item,
+.dropdown-toggle {
+  color: #333;
+  text-decoration: none;
+}
+
 </style>

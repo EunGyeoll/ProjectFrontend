@@ -14,7 +14,7 @@
     <div v-if="items.length === 0" class="empty">상품이 없습니다.</div>
 
     <div v-else class="item-grid">
-      <div v-for="item in items" :key="item.itemId" class="item-card">
+      <div v-for="item in items" :key="item.itemId" @click="goToDetail(item.itemId)" class="item-card">
         <img :src="item.representativeImagePath" alt="상품 이미지" />
         <p class="name">{{ item.itemName }}</p>
         <p class="price">{{ item.price.toLocaleString() }}원</p>
@@ -37,7 +37,7 @@ const categories = ref(['배경화면', '폰꾸소품', '위젯']);
 
 const fetchItems = async () => {
   try {
-    const res = await axios.get('/api/items', {
+    const res = await axios.get('/api/items/list', {
       params: selectedCategory.value ? { category: selectedCategory.value } : {}
     });
     items.value = res.data.content || res.data;
@@ -48,6 +48,11 @@ const fetchItems = async () => {
     console.error('상품 조회 실패:', err);
   }
 };
+
+const goToDetail = (itemId) => {
+    router.push(`/items/${itemId}`);
+  };
+  
 
 const goToForm = () => {
   console.log('폼 이동 시도'); // 🔍 이거 넣어봐

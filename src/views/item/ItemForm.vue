@@ -92,17 +92,23 @@
     };
 
 
-  const submitForm = async () => {
+    const submitForm = async () => {
     try {
-      await createItem(item.value, imageFiles.value);
-      alert('상품이 등록되었습니다.');
-      router.push('/items');
+        const res = await createItem(item.value, imageFiles.value);
+        console.log('📦 서버 응답:', res);
+
+        if (res.status !== 200) {
+        throw new Error(`서버 오류: ${res.status}`);
+        }
+
+        alert('상품이 등록되었습니다.');
+        router.push('/items');
     } catch (err) {
-      console.error(err);
-      alert('등록에 실패했습니다.');
+        console.error('❌ 등록 에러:', err);
+        alert('등록에 실패했습니다.');
     }
-  };
-  
+    };
+
   onMounted(fetchCategories);
   </script>
   
