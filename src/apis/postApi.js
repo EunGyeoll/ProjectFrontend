@@ -5,12 +5,6 @@ export function fetchAllPosts(params) {
     return axiosInstance.get("/api/posts/list", { params });
   }
 
-
-  // 게시글 상세보기
-  export function fetchAllPosts(params) {
-    return axiosInstance.get("/api/posts/list", { params });
-  }
-  
   
 // 2. 이미지 없는 게시글 등록 (JSON 요청)
 export function createPost(postData) {

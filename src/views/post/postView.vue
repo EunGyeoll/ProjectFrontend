@@ -20,10 +20,12 @@
           <div class="meta">
   <span class="category">#{{ post.categoryName }}</span>
 </div>
-<div class="stats">
-  <span class="likes">❤️ {{ post.likeCount }}</span>
-  <span class="comments">💬 {{ post.commentCount }}</span>
-</div>
+    <div class="stats">
+    <span class="views">👁 {{ post.hitCount }}</span> <!-- ✅ 이 줄 추가 -->
+    <span class="likes">❤️ {{ post.likeCount }}</span>
+    <span class="comments">💬 {{ post.commentCount }}</span>
+    </div>
+
 
         </li>
       </ul>
@@ -168,6 +170,11 @@
 
 .likes,
 .comments {
+  display: flex;
+  align-items: center;
+}
+
+.views {
   display: flex;
   align-items: center;
 }
