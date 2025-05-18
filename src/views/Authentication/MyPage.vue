@@ -156,10 +156,19 @@ const isPhoneChecked = ref(true);
 // 이미지 미리보기 URL 계산
 const profileImageSrc = computed(() => {
   const val = profileImagePreview.value;
-  return val && val.trim() !== "" && val !== "null" && val !== "undefined"
-    ? val
-    : defaultImage;
+
+  if (!val || val.trim() === "" || val === "null" || val === "undefined") {
+    return defaultImage;
+  }
+
+  // ✅ S3 URL이든 blob이든 둘 다 허용
+  if (val.startsWith("http") || val.startsWith("blob:")) {
+    return val;
+  }
+
+  return defaultImage;
 });
+
 
 // 프로필 이미지 변경
 const handleFileChange = (e) => {
@@ -371,6 +380,7 @@ onMounted(async () => {
   try {
     const res = await getMyProfile();
     const data = res.data;
+    console.log("🔥 받아온 프로필 이미지:", data.profileImageUrl); 
 
     form.value.memberId = data.memberId;
     form.value.nickName = data.nickName;

@@ -33,13 +33,13 @@ const routes = [
   {
     path: '/posts',
     name: 'Posts',
-    component: () => import('@/views/post/PostView.vue'),
+    component: () => import('@/views/post/postView.vue'),
     meta: { requiresAuth: true } // 로그인한 사용자만 접근 가능하게
   },
   {
     path: '/posts/new',
     name: 'PostCreate',
-    component: () => import('@/views/post/PostForm.vue'),
+    component: () => import('@/views/post/postForm.vue'),
     meta: { requiresAuth: true } // 로그인한 사용자만 접근 가능하게
   },
   {

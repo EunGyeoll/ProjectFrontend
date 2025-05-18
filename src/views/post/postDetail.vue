@@ -280,170 +280,155 @@ const deleteComment = async (commentId) => {
   
   
   <style scoped>
-  .post-detail-container {
-    max-width: 800px;
-    margin: auto;
-    padding: 24px;
-  }
-  
-  .post-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  
-  .profile {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-  
-  .author-info {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .nickname {
-    font-weight: 600;
-    font-size: 15px;
-    color: #333;
-  }
-  
-  .date {
-    font-size: 13px;
-    color: #aaa;
-  }
-  
-  .title {
-    font-size: 20px;
-    font-weight: bold;
-    margin: 12px 0;
-  }
-  
-  .meta {
-    font-size: 14px;
-    color: #888;
-    margin-bottom: 16px;
-  }
-  
-  .content {
-    font-size: 16px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-  }
-  
-  .images {
-    margin-top: 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .post-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-  }
-  
-  .comment-form textarea,
-  .reply-form textarea {
-    width: 100%;
-    padding: 8px;
-    margin: 12px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .comment-form button,
-  .reply-form button,
-  .reply-btn {
-    background-color: #ff84a2;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-bottom: 8px;
-  }
-  
-  .comments {
-    margin-top: 32px;
-  }
-  
-  .comment {
-    border-top: 1px solid #eee;
-    padding-top: 12px;
-    margin-top: 12px;
-  }
-  
-  .comment-root {
-  border-top: 1px solid #eee;
-  padding-top: 12px;
-  margin-top: 12px;
+.post-detail-container {
+  max-width: 800px;
+  margin: auto;
+  padding: 24px;
+  font-family: 'Noto Sans KR', sans-serif;
 }
 
-.child-comments {
-  margin-left: 16px;
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #666;
+}
+
+.nickname {
+  font-weight: 600;
+  color: #222;
+}
+
+.date, .hit {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+  margin: 12px 0;
+}
+
+.meta {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.content {
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.images {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.post-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  object-fit: cover;
+}
+
+/* 댓글 영역 */
+.comment-form, .reply-form {
+  margin-top: 24px;
+}
+
+.comment-form textarea,
+.reply-form textarea,
+.edit-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.comment-form button,
+.reply-form button,
+.reply-btn,
+.edit-btn,
+.delete-btn {
+  background-color: #ff84a2;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
   margin-top: 8px;
-  border-left: 2px solid #f0f0f0;
-  padding-left: 12px;
 }
 
-  .comment-header {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 4px;
-  }
-  
-  .comment-body {
-    font-size: 15px;
-    color: #333;
-  }
-  
-  .comment-image {
+.reply-btn,
+.edit-btn,
+.delete-btn {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.btn-row {
+  display: flex;
+  /* align-content:end; */
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.comments {
+  margin-top: 32px;
+}
+
+.comment-block {
+  padding: 16px 0;
+  border-top: 1px solid #eee;
+}
+
+.comment-content {
+  font-size: 14px;
+  color: #333;
+}
+
+.comment-image {
   margin-top: 8px;
   max-width: 100px;
   border-radius: 4px;
   border: 1px solid #ddd;
 }
 
-.hit {
-  font-size: 13px;
+.child-comments {
+  margin-left: 20px;
+  border-left: 2px solid #f0f0f0;
+  padding-left: 12px;
+  margin-top: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
   color: #aaa;
 }
 
-.btn-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.edit-btn,
-.delete-btn {
-  background-color: #eee;
-  border: none;
-  padding: 4px 8px;
-  margin-top: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  border-radius: 4px;
-}
-
-
-.edit-textarea {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-  .loading {
-    text-align: center;
-    padding: 40px;
-    color: #aaa;
-  }
   </style>
   
