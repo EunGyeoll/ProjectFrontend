@@ -16,6 +16,17 @@
       <div class="images" v-if="post.imagePaths && post.imagePaths.length">
         <img v-for="(img, i) in post.imagePaths" :key="i" :src="img" class="post-image" />
       </div>
+
+      <!-- 좋아요 버튼 -->
+      <div class="post-like">
+        <font-awesome-icon
+          :icon="[liked ? 'fas' : 'far', 'heart']"
+          :class="['heart-icon', { liked, disabled: !isLoggedIn }]"
+          @click="toggleLike"
+        />
+        <span class="like-count">{{ likeCount }}</span>
+      </div>
+
   
       <!-- 댓글 작성 -->
       <div class="comment-form">
@@ -110,6 +121,13 @@
   import { ref, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
   import { fetchComments, submitComment as submitCommentApi } from '@/apis/commentApi'; // ✅ 수정된 import
+  import {
+    checkLike,
+    addLike,
+    removeLike,
+    getLikeCount,
+  } from '@/apis/likedPostApi';
+
   import axiosInstance from '@/plugin/axiosInstance';
   
   const post = ref(null);
@@ -123,8 +141,18 @@
   const replyFile = ref(null);
   const editingCommentId = ref(null);         // 수정 중인 댓글 ID
   const editedContent = ref('');              // 수정할 내용
+
   const editedFile = ref(null);       // 새 이미지 파일
   const removeImage = ref(false);     // 기존 이미지 삭제 여부
+
+  const postNo = route.params.id;
+
+  const isLiked = ref(false);
+  const liked=ref(false);
+  const likeCount = ref(0);
+  const isLoggedIn = ref(false);
+
+
 
   const fetchPost = async () => {
     try {
@@ -272,6 +300,58 @@ const deleteComment = async (commentId) => {
     console.error('댓글 삭제 실패:', err);
   }
 };
+
+// 좋아요
+const checkLikedStatus = async () => {
+  try {
+    const res = await checkLike(route.params.id);
+    liked.value = res.data;
+  } catch (err) {
+    console.warn('로그인하지 않았거나 좋아요 상태 확인 실패');
+    liked.value = false;
+  }
+};
+
+const fetchLikeCount = async () => {
+  try {
+    const res = await getLikeCount(route.params.id);
+    likeCount.value = res.data;
+  } catch (err) {
+    console.error('좋아요 수 조회 실패:', err);
+  }
+};
+
+const toggleLike = async () => {
+  console.log('toggleLike 함수')
+  if (!isLoggedIn.value) {
+    alert('좋아요 기능은 로그인 후 사용할 수 있어요!');
+    return;
+  }
+
+  try {
+    if (liked.value) {
+      await removeLike(route.params.id);
+    } else {
+      await addLike(route.params.id);
+    }
+    liked.value = !liked.value;
+    await fetchLikeCount();
+  } catch (err) {
+    console.error('좋아요 처리 실패:', err);
+  }
+};
+
+
+onMounted(async () => {
+  await fetchPost();
+  await fetchLikeCount();
+
+  const token = localStorage.getItem('token');
+  if (token) {
+    isLoggedIn.value = true;
+    await checkLikedStatus();
+  }
+});
 
   onMounted(fetchPost);
   </script>
@@ -428,6 +508,37 @@ const deleteComment = async (commentId) => {
   text-align: center;
   padding: 40px;
   color: #aaa;
+}
+
+/* 좋아요 영역 */
+.post-like {
+  font-size: 24px;
+  cursor: pointer;
+  user-select: none;
+  color: #ccc;
+  transition: color 0.2s;
+  margin-top: 10px;
+}
+
+.heart-icon {
+  font-size: 24px;
+  color: #ccc;
+  cursor: pointer;
+  vertical-align: middle; 
+}
+
+.heart-icon.liked {
+  color: #e46d8c;
+}
+
+.heart-icon.disabled {
+  opacity: 0.5;
+}
+
+.like-count {
+  margin-left: 6px;
+  font-size: 14px;
+  color: #666;
 }
 
   </style>

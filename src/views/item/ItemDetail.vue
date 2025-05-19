@@ -13,7 +13,7 @@
         <p class="category">카테고리: {{ item.categoryName }}</p>
 
         <!-- 찜하기 하트 버튼 -->
-        <div class="wishlist-button">
+        <div class="item-like">
           <font-awesome-icon
           :icon="[liked === true ? 'fas' : 'far', 'heart']"
           :class="['heart-icon', { liked: liked === true, disabled: !isLoggedIn }]"
@@ -226,12 +226,13 @@ const handleHeartClick = () => {
   margin-bottom: 4px;
 }
 
-.wishlist-button {
+.item-like {
   font-size: 24px;
   cursor: pointer;
   user-select: none;
   color: #ccc;
   transition: color 0.2s;
+  margin-top: 10px;
 }
 
 
@@ -246,7 +247,7 @@ const handleHeartClick = () => {
   color: #e46d8c;
 }
 
-.wishlist-button:hover .heart {
+.item-like:hover .heart {
   color: #e46d8c;
 }
 
@@ -445,7 +446,7 @@ const handleHeartClick = () => {
   color: #aaa;
 }
 
-.wishlist-button {
+.item-like {
   font-size: 24px;
   cursor: pointer;
   user-select: none;
@@ -457,7 +458,7 @@ const handleHeartClick = () => {
   color: #e46d8c;
 }
 
-.wishlist-button:hover .heart {
+.item-like:hover .heart {
   color: #e46d8c;
 }
 
