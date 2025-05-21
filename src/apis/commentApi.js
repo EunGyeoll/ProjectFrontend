@@ -20,3 +20,7 @@ export function submitComment(postNo, commentData, imageFile) {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
+
+export function deleteComment(commentId) {
+  return axiosInstance.delete(`/api/comments/${commentId}`)
+}

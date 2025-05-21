@@ -63,7 +63,7 @@
         </div>
         </div>
         <div v-else>
-          <p>{{ comment.content }}</p>
+          {{ comment.deleted ? '삭제된 댓글입니다.' : comment.content }}
           <img v-if="comment.imageUrl" :src="comment.imageUrl" class="comment-image" />
         </div>
         
@@ -97,7 +97,7 @@
               </div>
             </div>
             <div v-else>
-              <p>{{ child.content }}</p>
+              {{ child.deleted ? '삭제된 댓글입니다.' : child.content }}
               <img v-if="child.imageUrl" :src="child.imageUrl" class="comment-image" />
             </div>
 
@@ -120,7 +120,11 @@
   <script setup>
   import { ref, onMounted } from 'vue';
   import { useRoute } from 'vue-router';
-  import { fetchComments, submitComment as submitCommentApi } from '@/apis/commentApi'; // ✅ 수정된 import
+  import {
+    fetchComments,
+    submitComment as submitCommentApi,
+    deleteComment as deleteCommentApi 
+  } from '@/apis/commentApi';
   import {
     checkLike,
     addLike,
@@ -145,9 +149,6 @@
   const editedFile = ref(null);       // 새 이미지 파일
   const removeImage = ref(false);     // 기존 이미지 삭제 여부
 
-  const postNo = route.params.id;
-
-  const isLiked = ref(false);
   const liked=ref(false);
   const likeCount = ref(0);
   const isLoggedIn = ref(false);
@@ -168,6 +169,7 @@
   const fetchCommentsList = async (postNo) => {
     try {
       const res = await fetchComments(postNo);
+      console.log('댓글 응답 JSON:', res.data);  
       comments.value = buildCommentTree(res.data);
     } catch (err) {
       console.error('댓글 조회 실패:', err);
@@ -293,13 +295,15 @@ const handleEditImageChange = (event) => {
 
 const deleteComment = async (commentId) => {
   if (!confirm('정말 삭제하시겠습니까?')) return;
+
   try {
-    await axiosInstance.delete(`/api/comments/${commentId}`);
-    fetchCommentsList(route.params.id);
+    await deleteCommentApi(commentId);  // ✅ 수정된 부분
+    await fetchCommentsList(route.params.id);  // 삭제 후 목록 갱신
   } catch (err) {
     console.error('댓글 삭제 실패:', err);
   }
 };
+
 
 // 좋아요
 const checkLikedStatus = async () => {
