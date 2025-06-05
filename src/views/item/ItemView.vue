@@ -55,7 +55,7 @@ const goToDetail = (itemId) => {
   
 
 const goToForm = () => {
-  console.log('폼 이동 시도'); // 🔍 이거 넣어봐
+  console.log('폼 이동 시도'); 
 
   router.push('/items/new');
 };

@@ -8,26 +8,36 @@
       <div v-if="posts.length === 0" class="empty">게시글이 없습니다.</div>
   
       <ul class="post-list" v-else>
-        <li v-for="post in posts" :key="post.postNo" @click="goToDetail(post.postNo)">
-          <div class="post-header">
-            <img class="profile" :src="post.profileImageUrl" alt="프로필 이미지" />
-            <div class="author-info">
-              <span class="nickname">{{ post.writerNickname }}</span>
-              <span class="date">{{ formatDate(post.postDate) }}</span>
-            </div>
-          </div>
-          <div class="title">{{ post.title }}</div>
-          <div class="meta">
-  <span class="category">#{{ post.categoryName }}</span>
-</div>
-    <div class="stats">
-    <span class="views">👁 {{ post.hitCount }}</span> <!-- ✅ 이 줄 추가 -->
-    <span class="likes">❤️ {{ post.likeCount }}</span>
-    <span class="comments">💬 {{ post.commentCount }}</span>
+        <li v-for="post in posts" :key="post.postNo" @click="goToDetail(post.postNo)" class="post-item">
+  <div class="post-left">
+    <div class="post-header">
+      <img class="profile" :src="post.profileImageUrl" alt="프로필 이미지" />
+      <div class="author-info">
+        <span class="nickname">{{ post.writerNickname }}</span>
+        <span class="date">{{ formatDate(post.postDate) }}</span>
+      </div>
     </div>
 
+    <div class="title">{{ post.title }}</div>
 
-        </li>
+    <div class="meta">
+      <span class="category">#{{ post.categoryName }}</span>
+    </div>
+
+    <div class="stats">
+      <span class="views">👁 {{ post.hitCount }}</span>
+      <span class="likes">❤️ {{ post.likeCount }}</span>
+      <span class="comments">💬 {{ post.commentCount }}</span>
+    </div>
+  </div>
+
+  <!-- 오른쪽 썸네일 -->
+  <div v-if="post.representativeImagePath" class="thumbnail">
+    <img :src="post.representativeImagePath" alt="대표 이미지" />
+  </div>
+</li>
+
+
       </ul>
     </div>
   </template>
@@ -95,16 +105,18 @@
     text-decoration: none;
   }
   
-  .post-list {
-    list-style: none;
-    padding: 0;
-  }
-  
-  .post-list li {
-    padding: 16px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-  }
+  .post-list li.post-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.post-left {
+  flex: 1;
+}
   
   .post-header {
     display: flex;
@@ -178,6 +190,23 @@
   display: flex;
   align-items: center;
 }
+
+.thumbnail {
+  width: 100px;
+  aspect-ratio: 1 / 1; 
+  margin-left: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+}
+
+
 
   </style>
   

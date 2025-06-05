@@ -46,9 +46,13 @@ const routes = [
     path: '/posts/:id',
     name: 'PostDetail',
     component: () => import('@/views/post/postDetail.vue')
+  },
+  {
+    path: '/search',
+    name: 'SearchResult',
+    component: () => import('@/views/search/SearchResult.vue')  // 경로는 실제 위치에 맞게
   }
-  
-  
+
   
 ];
 

@@ -44,6 +44,13 @@ const isLoggedIn = computed(() => authStore.isLoggedIn);
 const userId = computed(() => authStore.user.id);
 
 const search = () => {
+  const keyword = searchQuery.value.trim();
+  if (!keyword) return;
+
+  router.push({
+    path: "/search",
+    query: {keyword}
+  });
   console.log("검색 요청:", searchQuery.value);
 };
 
