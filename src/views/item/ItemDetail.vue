@@ -5,7 +5,7 @@
         class="item-image"
         :src="item.representativeImagePath"
         alt="대표 이미지"
-        @click="openModal(item.representativeImagePath)"
+        @click="openImageModalByUrl(item.representativeImagePath)"
       />
       <div class="info">
         <h1 class="title">{{ item.itemName }}</h1>
@@ -15,15 +15,12 @@
         <!-- 찜하기 하트 버튼 -->
         <div class="item-like">
           <font-awesome-icon
-          :icon="[liked === true ? 'fas' : 'far', 'heart']"
-          :class="['heart-icon', { liked: liked === true, disabled: !isLoggedIn }]"
-          @click="handleHeartClick"
+            :icon="[liked === true ? 'fas' : 'far', 'heart']"
+            :class="['heart-icon', { liked: liked === true, disabled: !isLoggedIn }]"
+            @click="handleHeartClick"
           />
           <span class="like-count">{{ favoriteCount }}</span>
         </div>
-
-
-
       </div>
     </div>
 
@@ -40,21 +37,26 @@
           :key="i"
           :src="img"
           class="gallery-image"
-          @click="openModal(img)"
+          @click="openImageModalByUrl(img)"
         />
       </div>
     </div>
 
     <!-- 이미지 확대 모달 -->
-    <div v-if="modalImage" class="modal" @click.self="closeModal">
+    <div v-if="showImageModal" class="modal-overlay" @click.self="closeImageModal" tabindex="0">
       <div class="modal-content">
-        <button class="close-button" @click="closeModal">✕</button>
-        <img :src="modalImage" class="modal-image" />
+        <img :src="item.imagePaths[currentImageIndex]" alt="확대 이미지" />
+        <button class="close-btn" @click="closeImageModal">×</button>
+        <button class="nav-btn prev" @click.stop="prevImage" v-if="item.imagePaths.length > 1">‹</button>
+        <button class="nav-btn next" @click.stop="nextImage" v-if="item.imagePaths.length > 1">›</button>
       </div>
     </div>
   </div>
+
   <div v-else class="loading">상품 정보를 불러오는 중입니다...</div>
 </template>
+
+
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
@@ -69,20 +71,19 @@ import {
 
 const item = ref(null);
 const route = useRoute();
-const liked = ref(null); // ← 초기값을 false 대신 null로
-const likedChecked = ref(false); // 찜 상태 체크 완료 여부
+const liked = ref(null);
+const likedChecked = ref(false);
 const favoriteCount = ref(0);
 const isLoggedIn = ref(false);
 
-const modalImage = ref(null);
+// 모달 관련 상태
+const showImageModal = ref(false);
+const currentImageIndex = ref(0);
 
 const fetchItem = async () => {
   const id = route.params.id;
-  console.log("fetchItem 호출됨, id:", id);
-
   try {
     const res = await axiosInstance.get(`/api/items/${id}`);
-    console.log("item fetch 성공", res.data);
     item.value = res.data;
   } catch (err) {
     console.error("❌ 상품 조회 실패", err);
@@ -93,7 +94,6 @@ const checkFavoriteStatus = async () => {
   try {
     const res = await checkFavorite(route.params.id);
     liked.value = res.data;
-    console.log("liked 상태:", liked.value);  // true로 찍히는지 확인
   } catch (err) {
     console.error("❌ 찜 상태 확인 실패:", err.response?.status, err.response?.data || err.message);
   } finally {
@@ -101,14 +101,14 @@ const checkFavoriteStatus = async () => {
   }
 };
 
-const fetchFavoriteCount = async() => {
+const fetchFavoriteCount = async () => {
   try {
     const res = await getFavoriteCount(route.params.id);
     favoriteCount.value = res.data;
   } catch (err) {
     console.error("찜 수 조회 실패: ", err);
   }
-}
+};
 
 const toggleLike = async () => {
   const token = localStorage.getItem("token");
@@ -125,29 +125,55 @@ const toggleLike = async () => {
       await addFavorite(itemId);
     }
     liked.value = !liked.value;
-    await fetchFavoriteCount(); // 찜 수 다시 불러오기
+    await fetchFavoriteCount();
   } catch (err) {
     console.error('찜 처리 실패:', err);
     alert("찜 처리 중 오류가 발생했습니다.");
   }
 };
 
-
-const openModal = (imgUrl) => {
-  modalImage.value = imgUrl;
+const handleHeartClick = () => {
+  if (!isLoggedIn.value) {
+    alert("찜 기능은 로그인 후 사용할 수 있어요!");
+    return;
+  }
+  toggleLike();
 };
 
-const closeModal = () => {
-  modalImage.value = null;
+// 모달 함수
+const openImageModalByUrl = (imgUrl) => {
+  if (!item.value || !item.value.imagePaths) return;
+  const index = item.value.imagePaths.indexOf(imgUrl);
+  if (index !== -1) {
+    currentImageIndex.value = index;
+    showImageModal.value = true;
+    setTimeout(() => {
+      document.querySelector('.modal-overlay')?.focus();
+    }, 0);
+  }
+};
+
+const closeImageModal = () => {
+  showImageModal.value = false;
+  currentImageIndex.value = 0;
+};
+
+const prevImage = () => {
+  const len = item.value?.imagePaths?.length || 0;
+  currentImageIndex.value = (currentImageIndex.value - 1 + len) % len;
+};
+
+const nextImage = () => {
+  const len = item.value?.imagePaths?.length || 0;
+  currentImageIndex.value = (currentImageIndex.value + 1) % len;
 };
 
 const handleKeyDown = (e) => {
   if (e.key === 'Escape') {
-    closeModal();
+    closeImageModal();
   }
 };
 
-// formatPrice는 반드시 <script setup> 안에서 정의해야 template에서 사용 가능
 const formatPrice = (price) => {
   return price?.toLocaleString() || '0';
 };
@@ -162,23 +188,12 @@ onMounted(() => {
     checkFavoriteStatus();
   }
 
-
   window.addEventListener('keydown', handleKeyDown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
 });
-
-const handleHeartClick = () => {
-  console.log("🔐 isLoggedIn 상태:", isLoggedIn.value); 
-  if (!isLoggedIn.value) {
-    alert("찜 기능은 로그인 후 사용할 수 있어요!");
-    return;
-  }
-  toggleLike();
-};
-
 </script>
 
 
@@ -482,6 +497,138 @@ const handleHeartClick = () => {
 
 .heart-icon.disabled {
   opacity: 0.4;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  outline: none;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.modal-content img {
+  max-width: 100%;
+  height: auto;
+  max-height: 80vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.close-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #fff;
+  color: #333;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  font-size: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn.prev {
+  left: -60px;
+}
+
+.nav-btn.next {
+  right: -60px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  outline: none;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.modal-content img {
+  max-width: 100%;
+  height: auto;
+  max-height: 80vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.close-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #fff;
+  color: #333;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  font-size: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn.prev {
+  left: -60px;
+}
+
+.nav-btn.next {
+  right: -60px;
 }
 
 </style>

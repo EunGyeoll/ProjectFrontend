@@ -13,9 +13,28 @@
     <div class="meta">#{{ post.categoryName }}</div>
     <div class="content" v-html="post.content"></div>
 
+    <!-- 이미지 리스트 -->
     <div class="images" v-if="post.imagePaths && post.imagePaths.length">
-      <img v-for="(img, i) in post.imagePaths" :key="i" :src="img" class="post-image" />
+      <img
+        v-for="(img, i) in post.imagePaths"
+        :key="i"
+        :src="img"
+        class="post-image"
+        @click="openImageModal(i)"
+      />
     </div>
+
+    <!-- 이미지 확대 모달 -->
+    <div v-if="showImageModal" class="modal-overlay" @click.self="closeImageModal">
+      <div class="modal-content">
+        <img :src="post.imagePaths[currentImageIndex]" alt="확대 이미지" />
+        <button class="close-btn" @click="closeImageModal">×</button>
+        <button class="nav-btn prev" @click.stop="prevImage">‹</button>
+        <button class="nav-btn next" @click.stop="nextImage">›</button>
+      </div>
+    </div>
+
+
 
     <div class="post-like">
       <font-awesome-icon
@@ -343,6 +362,32 @@
       await checkLikedStatus();
     }
   });
+
+  const showImageModal = ref(false);
+const currentImageIndex = ref(0);
+
+const openImageModal = (index) => {
+  currentImageIndex.value = index;
+  showImageModal.value = true;
+};
+
+const closeImageModal = () => {
+  showImageModal.value = false;
+};
+
+const prevImage = () => {
+  if (!post.value?.imagePaths?.length) return;
+  currentImageIndex.value =
+    (currentImageIndex.value - 1 + post.value.imagePaths.length) %
+    post.value.imagePaths.length;
+};
+
+const nextImage = () => {
+  if (!post.value?.imagePaths?.length) return;
+  currentImageIndex.value =
+    (currentImageIndex.value + 1) % post.value.imagePaths.length;
+};
+
   </script>
   
   
@@ -414,12 +459,13 @@
 }
 
 .post-image {
-  max-width: 100%;
-  height: auto;
+  width: 180px;
+  aspect-ratio: 1 / 1;    /* ✅ 정사각형 비율 유지 */
+  object-fit: cover;
   border-radius: 8px;
   border: 1px solid #ddd;
-  object-fit: cover;
 }
+
 
 /* 댓글 영역 */
 .comment-form, .reply-form {
@@ -529,6 +575,73 @@
   margin-left: 6px;
   font-size: 14px;
   color: #666;
+}
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.modal-content img {
+  max-width: 100%;
+  height: auto;              /* 비율 유지 */
+  max-height: 80vh;          /* 화면 넘치지 않게 제한 */
+  border-radius: 8px;
+  object-fit: contain;       /* 비율 유지 + 안 잘리게 */
+}
+
+
+.close-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #fff;
+  color: #333;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  font-size: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn.prev {
+  left: -60px;
+}
+
+.nav-btn.next {
+  right: -60px;
 }
 
   </style>
