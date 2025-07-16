@@ -38,8 +38,8 @@
     }
   };
   
-  const goToDetail = (postNo) => {
-    router.push(`/posts/${postNo}`);
+  const goToDetail = (postId) => {
+    router.push(`/posts/${postId}`);
   };
   
   const formatDate = (dateStr) => {

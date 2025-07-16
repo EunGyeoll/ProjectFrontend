@@ -1,10 +1,10 @@
 import axiosInstance from "@/plugin/axiosInstance";
 
-export function fetchComments(postNo) {
-  return axiosInstance.get(`/api/comments/${postNo}`);
+export function fetchComments(postId) {
+  return axiosInstance.get(`/api/comments/${postId}`);
 }
 
-export function submitComment(postNo, commentData, imageFile) {
+export function submitComment(postId, commentData, imageFile) {
   const formData = new FormData();
   formData.append(
     "commentData",
@@ -16,7 +16,7 @@ export function submitComment(postNo, commentData, imageFile) {
     formData.append("image", imageFile);
   }
 
-  return axiosInstance.post(`/api/comments/${postNo}`, formData, {
+  return axiosInstance.post(`/api/comments/${postId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }

@@ -1,8 +1,8 @@
 <template>
   <div class="post-write-container">
-    <h2>글 작성</h2>
+    <h2>{{ isEditMode ? '글 수정' : '글 작성' }}</h2>
 
-    <form @submit.prevent="submitPost">
+    <form @submit.prevent="isEditMode ? updatePost() : submitPost()">
       <!-- 카테고리 -->
       <div class="form-group">
         <label>카테고리</label>
@@ -20,33 +20,30 @@
         <input type="text" v-model="form.title" required />
       </div>
 
-      <!-- 이미지 다중 첨부 -->
-      <div class="form-group">
-        <label>이미지 첨부</label>
-        <input type="file" multiple accept="image/*" @change="handleImageChange" />
-      </div>
-
       <!-- Toast UI Editor -->
       <div class="form-group">
         <label>내용</label>
         <div ref="editorRoot" />
       </div>
 
-      <button type="submit">등록</button>
+      <button type="submit">{{ isEditMode ? '수정' : '등록' }}</button>
     </form>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { useRoute, useRouter } from 'vue-router';
+import axiosInstance from '@/plugin/axiosInstance';
 import Editor from '@toast-ui/editor';
+import { updatePost as updatePostApi } from '@/apis/postApi'
+import { fetchPostCategories } from '@/apis/postApi'
 import '@toast-ui/editor/dist/toastui-editor.css';
 
-import { fetchPostCategories, createPost, createPostWithImage } from '@/apis/postApi';
-
+const route = useRoute();
 const router = useRouter();
+const postId = route.params.id;
+const isEditMode = !!postId;
 
 const form = ref({
   title: '',
@@ -54,72 +51,44 @@ const form = ref({
   categoryId: ''
 });
 
-const imageFiles = ref([]); // 선택된 이미지들
 const categories = ref([]);
 const editorRoot = ref(null);
-const editorInstance = ref(null);
+let editorInstance = null;
 
-// Toast UI Editor 초기화
+// 에디터 초기화 및 데이터 로드
 onMounted(async () => {
   await fetchCategories();
-
-  // 기존 에디터 인스턴스 제거 (중복 초기화 방지)
-  if (editorInstance.value) {
-    editorInstance.value.destroy();
+  if (isEditMode) {
+    await fetchPostDetail();
   }
 
-  editorInstance.value = new Editor({
+  if (editorInstance) editorInstance.destroy();
+
+  editorInstance = new Editor({
     el: editorRoot.value,
     height: '500px',
     initialEditType: 'wysiwyg',
     previewStyle: 'vertical',
+    initialValue: isEditMode ? form.value.content : '',
     hooks: {
       addImageBlobHook: async (blob, callback) => {
         const formData = new FormData();
         formData.append('file', blob);
 
         try {
-          const res = await axios.post('/test-upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-
+          const res = await axiosInstance.post('/api/test-upload', formData);
           const imageUrl = res.data;
-          console.log('S3 이미지 URL:', imageUrl);
-
           callback(imageUrl, blob.name);
         } catch (err) {
-          console.error('에디터 이미지 업로드 실패:', err);
-          alert('이미지 업로드 실패');
+          console.error('이미지 업로드 실패:', err);
+          alert('이미지 업로드에 실패했습니다.');
         }
       }
     }
   });
 });
 
-
-
-// 이미지 input으로 선택 시 본문에 삽입
-const handleImageChange = async (e) => {
-  const files = Array.from(e.target.files);
-  imageFiles.value = files;
-
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await axios.post('/test-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      const imageUrl = res.data;
-      editorInstance.value.insertText(`![${file.name}](${imageUrl})\n`);
-    } catch (err) {
-      console.error('이미지 업로드 실패:', err);
-    }
-  }
-};
-
-// 카테고리 불러오기
+// 카테고리 로딩
 const fetchCategories = async () => {
   try {
     const res = await fetchPostCategories();
@@ -129,29 +98,59 @@ const fetchCategories = async () => {
   }
 };
 
-// 등록
-const submitPost = async () => {
-  form.value.content = editorInstance.value.getHTML();
+// 수정 모드일 경우 게시글 정보 불러오기
+const fetchPostDetail = async () => {
+  try {
+    const res = await axiosInstance.get(`/api/posts/${postId}`);
+    const post = res.data;
+    form.value.title = post.title;
+    form.value.content = post.content;
+    form.value.categoryId = post.categoryId;
+  } catch (err) {
+    console.error('게시글 불러오기 실패:', err);
+  }
+};
 
-  const payload = {
-    title: form.value.title,
-    content: form.value.content,
-    categoryId: form.value.categoryId,
+// 글 작성
+const submitPost = async () => {
+  form.value.content = editorInstance.getHTML();
+
+  const postData = {
+    ...form.value,
     postDate: new Date().toISOString()
   };
 
   try {
-    if (imageFiles.value.length > 0) {
-      await createPostWithImage(payload, imageFiles.value);
-    } else {
-      await createPost(payload);
-    }
-
+    await axios.post('/api/posts/new', postData);
     alert('글이 등록되었습니다!');
     router.push('/posts');
   } catch (err) {
     console.error('등록 실패:', err);
     alert('등록에 실패했습니다.');
+  }
+};
+
+// 글 수정
+const updatePost = async () => {
+  form.value.content = editorInstance.getHTML();
+
+  const payload = {
+    ...form.value,
+    postDate: new Date().toISOString()
+  };
+
+  const formData = new FormData();
+  formData.append('postData', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+
+  const token = localStorage.getItem('token');
+
+  try {
+    await updatePostApi(postId, formData, token); 
+    alert('수정 완료!');
+    router.push(`/posts/${postId}`);
+  } catch (err) {
+    console.error('수정 실패:', err);
+    alert('수정에 실패했습니다.');
   }
 };
 </script>
@@ -162,27 +161,21 @@ const submitPost = async () => {
   margin: auto;
   padding: 24px;
 }
-
 .form-group {
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
 }
-
 label {
   font-weight: 600;
   margin-bottom: 4px;
 }
-
-input,
-textarea,
-select {
+input, select {
   padding: 8px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-
 button {
   background-color: #ff84a2;
   color: white;
@@ -191,51 +184,23 @@ button {
   border-radius: 6px;
   cursor: pointer;
 }
-
 button:hover {
   background-color: #e46d8c;
 }
-</style>
 
-  
-  <style scoped>
-  .post-write-container {
-    max-width: 800px;
-    margin: auto;
-    padding: 24px;
-  }
-  
-  .form-group {
-    margin-bottom: 16px;
-    display: flex;
+@media (max-width: 600px) {
+  .post-item {
     flex-direction: column;
+    align-items: flex-start;
   }
-  
-  label {
-    font-weight: 600;
-    margin-bottom: 4px;
+
+  .thumbnail {
+    width: 100%;
+    margin: 12px 0 0 0;
   }
-  
-  input,
-  textarea,
-  select {
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+
+  .post-left {
+    max-width: 100%;
   }
-  
-  button {
-    background-color: #ff84a2;
-    color: white;
-    padding: 10px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background-color: #e46d8c;
-  }
-  </style>
-  
+}
+</style>

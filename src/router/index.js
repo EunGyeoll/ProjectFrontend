@@ -48,6 +48,12 @@ const routes = [
     component: () => import('@/views/post/postDetail.vue')
   },
   {
+    path: '/posts/edit/:id',
+    name: 'PostEdit',
+    component: () => import('@/views/post/postForm.vue'),
+    meta : {requiresAuth: true}
+  },
+  {
     path: '/search',
     name: 'SearchResult',
     component: () => import('@/views/search/SearchResult.vue')  // 경로는 실제 위치에 맞게

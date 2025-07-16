@@ -39,7 +39,7 @@
     <section v-if="!isLoading && tab === 'posts'">
       <div v-if="posts.length === 0" class="empty">게시글 검색 결과가 없습니다.</div>
       <div v-else class="post-list">
-        <div v-for="post in posts" :key="post.postNo" class="post-card" @click="goToPostDetail(post.postNo)">
+        <div v-for="post in posts" :key="post.postId" class="post-card" @click="goToPostDetail(post.postId)">
           <img v-if="post.representativeImagePath" :src="post.representativeImagePath" class="post-img" />
           <div class="post-info">
             <h4 class="post-title" v-html="highlight(post.title, keyword)"></h4>
@@ -102,7 +102,7 @@ const highlight = (text, keyword) => {
 };
 
 const goToItemDetail = (itemId) => router.push(`/items/${itemId}`);
-const goToPostDetail = (postNo) => router.push(`/posts/${postNo}`);
+const goToPostDetail = (postId) => router.push(`/posts/${postId}`);
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('ko-KR');
 const nextPage = () => { page.value++; fetchSearchResults(); };
 const prevPage = () => { if (page.value > 0) page.value--; fetchSearchResults(); };

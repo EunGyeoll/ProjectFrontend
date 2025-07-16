@@ -3,7 +3,7 @@
     <h1>마이페이지</h1>
 
     <section class="profile-section">
-      <h2>회원정보 수정</h2>
+      <!-- <h2>회원정보 수정</h2> -->
       <form @submit.prevent="handleUpdate">
         <!-- ✅ 프로필 이미지 미리보기 + 버튼 -->
         <div class="form-group">

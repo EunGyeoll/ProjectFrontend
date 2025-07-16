@@ -1,27 +1,8 @@
 <template>
     <div class="item-form">
-      <h2>상품 등록</h2>
+      <h2>상품 판매</h2>
       <form @submit.prevent="submitForm">
-        <div class="form-group">
-          <label>상품명</label>
-          <input v-model="item.itemName" type="text" required />
-        </div>
-  
-        <div class="form-group">
-          <label>가격</label>
-          <input v-model.number="item.price" type="number" required />
-        </div>
-  
-        <div class="form-group">
-          <label>설명</label>
-          <textarea v-model="item.description" required></textarea>
-        </div>
-  
-        <div class="form-group">
-          <label>재고 수량</label>
-          <input v-model.number="item.stockQuantity" type="number" required />
-        </div>
-  
+          
         <div class="form-group">
         <label>카테고리</label>
         <select v-model="item.categoryId" required>
@@ -42,11 +23,32 @@
         </select>
         </div>
 
+        <div class="form-group">
+          <label>상품명</label>
+          <input v-model="item.itemName" type="text" required />
+        </div>
+  
+        <div class="form-group">
+          <label>가격</label>
+          <input v-model.number="item.price" type="number" required />
+        </div>
   
         <div class="form-group">
           <label>이미지 업로드</label>
           <input type="file" multiple @change="handleFileChange" />
         </div>
+
+        <div class="form-group">
+          <label>설명</label>
+          <textarea v-model="item.description" required></textarea>
+        </div>
+  
+        <!-- <div class="form-group">
+          <label>재고 수량</label>
+          <input v-model.number="item.stockQuantity" type="number" required />
+        </div> -->
+
+
   
         <button type="submit">등록</button>
       </form>
@@ -76,11 +78,6 @@
     imageFiles.value = Array.from(e.target.files);
   };
   
-//   const fetchCategories = async () => {
-//     const res = await axiosInstance.get('/api/admin/item-categories');
-//     categories.value = res.data.flatMap(group => group.children);
-//   };
-
     const fetchCategories = async () => {
     try {
         const res = await axiosInstance.get('/api/item-categories/tree');

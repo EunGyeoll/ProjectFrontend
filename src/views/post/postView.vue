@@ -1,21 +1,22 @@
 <template>
     <div class="post-container">
       <div class="header">
-        <h1>커뮤니티 전체글</h1>
+        <h2>커뮤니티</h2>
         <router-link to="/posts/new" class="write-btn">글쓰기</router-link>
       </div>
   
       <div v-if="posts.length === 0" class="empty">게시글이 없습니다.</div>
   
       <ul class="post-list" v-else>
-        <li v-for="post in posts" :key="post.postNo" @click="goToDetail(post.postNo)" class="post-item">
+        <li v-for="post in posts" :key="post.postId" @click="goToDetail(post.postId)" class="post-item">
   <div class="post-left">
     <div class="post-header">
       <img class="profile" :src="post.profileImageUrl" alt="프로필 이미지" />
-      <div class="author-info">
-        <span class="nickname">{{ post.writerNickname }}</span>
-        <span class="date">{{ formatDate(post.postDate) }}</span>
-      </div>
+  <div class="author-info">
+    <span class="nickname">{{ post.writerNickname }}</span>
+    <span class="dot">·</span>
+    <span class="date">{{ formatDate(post.postDate) }}</span>
+  </div>
     </div>
 
     <div class="title">{{ post.title }}</div>
@@ -25,9 +26,9 @@
     </div>
 
     <div class="stats">
-      <span class="views">👁 {{ post.hitCount }}</span>
-      <span class="likes">❤️ {{ post.likeCount }}</span>
-      <span class="comments">💬 {{ post.commentCount }}</span>
+      <span class="views" title="조회수">👁 {{ post.hitCount }}</span>
+      <span class="likes" title="좋아요">❤️ {{ post.likeCount }}</span>
+      <span class="comments" title="댓글">💬 {{ post.commentCount }}</span>
     </div>
   </div>
 
@@ -59,8 +60,8 @@
     }
   };
   
-  const goToDetail = (postNo) => {
-    router.push(`/posts/${postNo}`);
+  const goToDetail = (postId) => {
+    router.push(`/posts/${postId}`);
   };
   
   const formatDate = (dateStr) => {
@@ -106,13 +107,14 @@
   }
   
   .post-list li.post-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+  }
+
 
 .post-left {
   flex: 1;
@@ -134,15 +136,16 @@
   
   .author-info {
     display: flex;
-    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
   }
-  
+
   .nickname {
     font-weight: 600;
-    font-size: 14px;
     color: #333;
   }
-  
+    
   .date {
     font-size: 12px;
     color: #aaa;
@@ -151,7 +154,11 @@
   .title {
     font-weight: bold;
     font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
+
   
   .meta {
     font-size: 13px;

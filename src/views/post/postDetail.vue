@@ -13,8 +13,9 @@
     <div class="meta">#{{ post.categoryName }}</div>
     <div class="content" v-html="post.content"></div>
 
+
     <!-- 이미지 리스트 -->
-    <div class="images" v-if="post.imagePaths && post.imagePaths.length">
+    <!-- <div class="images" v-if="post.imagePaths && post.imagePaths.length">
       <img
         v-for="(img, i) in post.imagePaths"
         :key="i"
@@ -22,7 +23,7 @@
         class="post-image"
         @click="openImageModal(i)"
       />
-    </div>
+    </div> -->
 
     <!-- 이미지 확대 모달 -->
     <div v-if="showImageModal" class="modal-overlay" @click.self="closeImageModal">
@@ -43,6 +44,13 @@
         @click="toggleLike"
       />
       <span class="like-count">{{ likeCount }}</span>
+    </div>
+
+    
+    <!-- 수정/삭제 버튼 -->
+    <div class="btn-row" v-if="isLoggedIn && post.isOwner">
+      <button class="edit-btn" @click="goToEditPage">수정</button>
+      <button class="delete-btn" @click="deletePost">삭제</button>
     </div>
 
     <div class="comment-form">
@@ -137,7 +145,7 @@
   
   <script setup>
   import { ref, onMounted } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import {
     fetchComments,
     submitComment as submitCommentApi,
@@ -153,7 +161,14 @@
   import axiosInstance from '@/plugin/axiosInstance';
   
   const post = ref(null);
+
+  const contentImages = ref([]);
+  const showImageModal = ref(false);
+  const currentImageIndex = ref(0);
+
+
   const route = useRoute();
+  const router = useRouter();
   const comments = ref([]);
   const newComment = ref('');
   const replyTarget = ref(null);
@@ -174,18 +189,38 @@
   
   const fetchPost = async () => {
     try {
-      const postNo = route.params.id;
-      const res = await axiosInstance.get(`/api/posts/${postNo}`);
+      const postId = route.params.id;
+      const res = await axiosInstance.get(`/api/posts/${postId}`);
+
+      // const post = ref(null); 로 선언된 변수에 백엔드 응답 데이터(res.data)를 넣는 것임.
       post.value = res.data;
-      fetchCommentsList(postNo);
+      updateImageListFromContent();
+     
+      console.log('대표이미지: ', post.value.representativeImagePath);
+      console.log('모달 이미지 리스트:', contentImages.value);
+
+      console.log('✅ 게시글 응답:', res.data); // isOwner 확인
+
+      fetchCommentsList(postId);
     } catch (err) {
       console.error('게시글 조회 실패:', err);
     }
   };
   
-  const fetchCommentsList = async (postNo) => {
+  const updateImageListFromContent = () => {
+    if (post.value?.content) {
+      const div = document.createElement('div'); // 가상의 div태그 생성
+      const imgTags = div.querySelectorAll('img');  // img 태그들만 골라냄
+      
+      contentImages.value = Array.from(imgTags).map((img) => img.src); // src 속성만 추출해 배열로 저장
+    }
+  };
+
+
+
+  const fetchCommentsList = async (postId) => {
     try {
-      const res = await fetchComments(postNo);
+      const res = await fetchComments(postId);
       comments.value = buildCommentTree(res.data);
     } catch (err) {
       console.error('댓글 조회 실패:', err);
@@ -217,12 +252,12 @@
   
   const submitComment = async () => {
     if (!newComment.value.trim()) return;
-    const postNo = route.params.id;
+    const postId = route.params.id;
     try {
-      await submitCommentApi(postNo, { content: newComment.value }, commentFile.value);
+      await submitCommentApi(postId, { content: newComment.value }, commentFile.value);
       newComment.value = '';
       commentFile.value = null;
-      fetchCommentsList(postNo);
+      fetchCommentsList(postId);
     } catch (err) {
       console.error('댓글 작성 실패:', err);
     }
@@ -236,13 +271,13 @@
   
   const submitReply = async (parentId) => {
     if (!replyContent.value.trim()) return;
-    const postNo = route.params.id;
+    const postId = route.params.id;
     try {
-      await submitCommentApi(postNo, { content: replyContent.value, parentCommentId: parentId }, replyFile.value);
+      await submitCommentApi(postId, { content: replyContent.value, parentCommentId: parentId }, replyFile.value);
       replyContent.value = '';
       replyTarget.value = null;
       replyFile.value = null;
-      fetchCommentsList(postNo);
+      fetchCommentsList(postId);
     } catch (err) {
       console.error('답글 작성 실패:', err);
     }
@@ -361,10 +396,16 @@
       isLoggedIn.value = true;
       await checkLikedStatus();
     }
+
+    // DOM이 그려진 후 이미지 클릭 이벤트 바인딩
+    setTimeout(() => {
+    const images = document.querySelectorAll('.content img'); // 본문 내 img DOM 탐색
+    images.forEach((img, idx) => {
+      img.addEventListener('click', () => openImageModal(idx)); // 클릭 시 모달 열기
+    });
+  }, 0);
   });
 
-  const showImageModal = ref(false);
-const currentImageIndex = ref(0);
 
 const openImageModal = (index) => {
   currentImageIndex.value = index;
@@ -388,6 +429,42 @@ const nextImage = () => {
     (currentImageIndex.value + 1) % post.value.imagePaths.length;
 };
 
+// 게시글 수정 페이지로
+const goToEditPage = () => {
+  if (post.value) {
+    router.push(`/posts/edit/${post.value.postId}`);
+  }
+};
+
+// 게시글 삭제 페이지로
+const deletePost = async () => {
+  if (!confirm('정말 게시글을 삭제하시겠습니까?')) return;
+
+  try {
+    await axiosInstance.delete(`/api/posts/${post.value.postId}`);
+    alert('삭제되었습니다');
+
+    await router.push('/posts').catch((err) => {
+      console.error('라우터 이동 실패:', err);
+      alert('페이지 이동 중 오류가 발생했습니다');
+    });
+
+  } catch (err) {
+    console.error('게시글 삭제 실패:', err);
+    alert('삭제 중 오류가 발생했습니다');
+  }
+};
+
+  // 이미지 클릭 시 모달 열기
+  setTimeout(() => {
+    const images = document.querySelectorAll('.content img');
+    images.forEach((img, idx) => {
+      img.addEventListener('click', () => {
+        currentImageIndex.value = idx;
+        showImageModal.value = true;
+      });
+    });
+  }, 0);
   </script>
   
   
@@ -400,8 +477,10 @@ const nextImage = () => {
   margin: auto;
   padding: 24px;
   font-family: 'Noto Sans KR', sans-serif;
+  box-sizing: border-box;
 }
 
+/* 헤더 영역 */
 .post-header {
   display: flex;
   align-items: center;
@@ -433,6 +512,7 @@ const nextImage = () => {
   color: #aaa;
 }
 
+/* 제목, 메타, 본문 */
 .title {
   font-size: 22px;
   font-weight: bold;
@@ -451,6 +531,7 @@ const nextImage = () => {
   white-space: pre-wrap;
 }
 
+/* 이미지 리스트 */
 .images {
   margin-top: 16px;
   display: flex;
@@ -460,41 +541,41 @@ const nextImage = () => {
 
 .post-image {
   width: 180px;
-  aspect-ratio: 1 / 1;    /* ✅ 정사각형 비율 유지 */
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #ddd;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.post-image:hover {
+  transform: scale(1.02);
 }
 
-
-/* 댓글 영역 */
-.comment-form, .reply-form {
-  margin-top: 24px;
+/* 공통 버튼 스타일 */
+button {
+  font-family: inherit;
 }
 
-.comment-form textarea,
-.reply-form textarea,
-.edit-textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  resize: vertical;
-}
-
-.comment-form button,
-.reply-form button,
+.btn,
 .reply-btn,
 .edit-btn,
 .delete-btn {
-  background-color: #ff84a2;
-  color: white;
-  border: none;
   padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
   font-size: 14px;
-  margin-top: 8px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn {
+  background-color: #ff84a2;
+  color: #fff;
+}
+
+.btn:hover {
+  background-color: #e46d8c;
 }
 
 .reply-btn,
@@ -504,14 +585,39 @@ const nextImage = () => {
   color: #333;
 }
 
+.reply-btn:hover,
+.edit-btn:hover,
+.delete-btn:hover {
+  background-color: #ddd;
+}
+
 .btn-row {
   display: flex;
-  /* align-content:end; */
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
   margin-top: 8px;
 }
 
+/* 댓글 폼 */
+.comment-form,
+.reply-form {
+  margin-top: 24px;
+}
+
+textarea,
+.edit-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* 댓글 목록 */
 .comments {
   margin-top: 32px;
 }
@@ -528,39 +634,32 @@ const nextImage = () => {
 
 .comment-image {
   margin-top: 8px;
-  max-width: 100px;
+  max-width: 120px;
   border-radius: 4px;
   border: 1px solid #ddd;
 }
 
+/* 대댓글 */
 .child-comments {
   margin-left: 20px;
-  border-left: 2px solid #f0f0f0;
   padding-left: 12px;
+  border-left: 2px solid #f0f0f0;
   margin-top: 12px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #aaa;
 }
 
 /* 좋아요 영역 */
 .post-like {
+  margin-top: 16px;
   font-size: 24px;
-  cursor: pointer;
   user-select: none;
-  color: #ccc;
-  transition: color 0.2s;
-  margin-top: 10px;
 }
 
 .heart-icon {
   font-size: 24px;
   color: #ccc;
   cursor: pointer;
-  vertical-align: middle; 
+  vertical-align: middle;
+  transition: color 0.2s;
 }
 
 .heart-icon.liked {
@@ -569,6 +668,7 @@ const nextImage = () => {
 
 .heart-icon.disabled {
   opacity: 0.5;
+  cursor: default;
 }
 
 .like-count {
@@ -577,7 +677,7 @@ const nextImage = () => {
   color: #666;
 }
 
-
+/* 모달 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -599,13 +699,12 @@ const nextImage = () => {
 
 .modal-content img {
   max-width: 100%;
-  height: auto;              /* 비율 유지 */
-  max-height: 80vh;          /* 화면 넘치지 않게 제한 */
+  max-height: 80vh;
+  object-fit: contain;
   border-radius: 8px;
-  object-fit: contain;       /* 비율 유지 + 안 잘리게 */
 }
 
-
+/* 모달 버튼 */
 .close-btn {
   position: absolute;
   top: -10px;
@@ -644,5 +743,19 @@ const nextImage = () => {
   right: -60px;
 }
 
+/* 로딩 메시지 */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #aaa;
+}
+@media (max-width: 600px) {
+  .post-image {
+    width: 100%;
+  }
+  .btn-row {
+    justify-content: center;
+  }
+}
   </style>
   
