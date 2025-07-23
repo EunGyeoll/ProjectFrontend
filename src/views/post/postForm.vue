@@ -117,11 +117,12 @@ const submitPost = async () => {
 
   const postData = {
     ...form.value,
+    categoryId: Number(form.value.categoryId), 
     postDate: new Date().toISOString()
   };
 
   try {
-    await axios.post('/api/posts/new', postData);
+    await axiosInstance.post('/api/posts', postData);
     alert('글이 등록되었습니다!');
     router.push('/posts');
   } catch (err) {

@@ -3,7 +3,7 @@
     <div class="inner-container">
       <div class="logo-img">
         <router-link to="/">
-          <img src="@/assets/logo/hatchie_logo_transparent.webp" alt="로고" />
+          <img src="@/assets/logo/modi_logo_transparent.webp" alt="로고" />
         </router-link>
       </div>
 
@@ -18,13 +18,10 @@
             <strong>{{ userId }}</strong>님
           </span>
           <router-link :to="`/mypage/${userId}`">마이페이지</router-link>
-          <button @click="handleLogout" class="btn btn-outline-secondary">로그아웃</button>
-          <router-link to="/create" class="highlight">상품 등록</router-link>
-        </template>
+          <button @click="handleLogout" class="btn btn-outline-secondary">로그아웃</button>        </template>
         <template v-else>
           <router-link to="/login">로그인</router-link>
           <router-link to="/join">회원가입</router-link>
-          <router-link to="/create" class="highlight">상품 등록</router-link>
         </template>
       </nav>
     </div>
@@ -107,7 +104,7 @@ const handleLogout = () => {
 
 .search-bar button {
   padding: 8px 16px;
-  background-color: #ff84a2;
+  background-color: #8E7CFF;
   color: white;
   border: none;
   border-radius: 8px;
@@ -116,31 +113,37 @@ const handleLogout = () => {
 }
 
 .search-bar button:hover {
-  background-color: #ff5f88;
+  background-color: #7a6ce6;
 }
 
 .navigation {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.navigation a {
+.navigation a,
+.navigation button {
   text-decoration: none;
-  color: #ff84a2;
+  color: #8E7CFF;
   font-weight: 600;
-  transition: color 0.3s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
 }
 
-.navigation a:hover {
-  color: #ff5f88;
+.navigation a:hover,
+.navigation button:hover {
+  color: #7a6ce6;
 }
 
 .navigation .highlight {
   color: #28a745;
   font-weight: bold;
 }
+
 
 .welcome-text {
   font-weight: 500;

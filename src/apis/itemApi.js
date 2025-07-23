@@ -5,6 +5,10 @@ export function fetchAllItems(params) {
   return axiosInstance.get("/api/items/list", { params });
 }
 
+export function fetchItemCategories() {
+  return axiosInstance.get('/api/item-categories');
+}
+
 // 카테고리별로 상품 가져오기
 export function fetchItemsByCategory(category, params) {
   return axiosInstance.get(`/api/items/by-category`, {

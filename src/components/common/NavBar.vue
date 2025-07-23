@@ -44,7 +44,7 @@
           </div>
         </div>
 
-        <router-link class="nav-item" to="/posts">전체 게시판</router-link>
+        <!-- <router-link class="nav-item" to="/posts">전체 게시판</router-link> -->
       </div>
     </div>
   </nav>
@@ -163,7 +163,7 @@ onMounted(() => {
 
 .dropdown-item:hover {
   background-color: #f9f9f9;
-  color: #ff84a2;
+  color: #8E7CFF;
 }
 
 .dropdown-item.child-item {

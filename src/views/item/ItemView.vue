@@ -26,18 +26,19 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
+import axiosInstance from '@/plugin/axiosInstance'; 
+import { fetchItemCategories } from '@/apis/itemApi';
 
 const route = useRoute();
 const router = useRouter();
 
 const items = ref([]);
 const selectedCategory = ref(route.query.category || '');
-const categories = ref(['배경화면', '폰꾸소품', '위젯']);
+const categories = ref([]); // 하드코딩 제거
 
 const fetchItems = async () => {
   try {
-    const res = await axios.get('/api/items/list', {
+    const res = await axiosInstance.get('/api/items/list', {
       params: selectedCategory.value ? { category: selectedCategory.value } : {}
     });
     items.value = res.data.content || res.data;
@@ -49,18 +50,27 @@ const fetchItems = async () => {
   }
 };
 
+const fetchCategories = async () => {
+  try {
+    const res = await fetchItemCategories();
+    categories.value = res.data.map(cat => cat.categoryName);
+  } catch (err) {
+    console.error('카테고리 불러오기 실패:', err);
+  }
+};
+
 const goToDetail = (itemId) => {
-    router.push(`/items/${itemId}`);
-  };
-  
+  router.push(`/items/${itemId}`);
+};
 
 const goToForm = () => {
-  console.log('폼 이동 시도'); 
-
   router.push('/items/new');
 };
 
-onMounted(fetchItems);
+onMounted(async () => {
+  await fetchCategories();
+  await fetchItems();
+});
 
 watch(
   () => route.query.category,
@@ -69,9 +79,8 @@ watch(
     fetchItems();
   }
 );
-
-
 </script>
+
 
 <style scoped>
 .item-view {

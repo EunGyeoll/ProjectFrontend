@@ -1,7 +1,7 @@
 <template>
   <div class="post-detail-container" v-if="post">
     <div class="post-header">
-      <img class="profile" :src="post.profileImageUrl" alt="프로필 이미지" />
+      <img class="profile" :src="post.profileImageUrl || defaultProfileImage"  alt="프로필 이미지" />
       <div class="author-info">
         <span class="nickname">{{ post.writerNickname }}</span>
         <span class="date">{{ formatDate(post.postDate) }}</span>
@@ -160,6 +160,9 @@
   
   import axiosInstance from '@/plugin/axiosInstance';
   
+  const defaultProfileImage = 'https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png';
+
+
   const post = ref(null);
 
   const contentImages = ref([]);

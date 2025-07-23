@@ -117,6 +117,7 @@ import { ref, computed, onMounted } from "vue";
 import { getMyProfile, updateMemberInfo } from "@/apis/memberApi";
 import { checkDuplicateNickName, checkDuplicateEmail, checkDuplicatePhoneNum } from "@/apis/authApi";
 
+const formData = new FormData();
 const showCurrentPassword = ref(false);
 const showNewPassword = ref(false);
 
@@ -145,7 +146,8 @@ const original = ref({
 
 const profileImage = ref(null);
 const profileImagePreview = ref("");
-const defaultImage = "/profileblack.png";
+const defaultImage =  "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
+const isImageRemoved = ref(false);
 
 // 중복 체크 상태
 const lastChecked = ref({ nickName: "", email: "", phone: "" });
@@ -196,6 +198,8 @@ const removeImage = () => {
   }
   profileImage.value = null;
   profileImagePreview.value = "";
+  isImageRemoved.value = true;
+
 };
 
 // 주소 검색
@@ -302,7 +306,7 @@ const onPhoneInput = (e) => {
   form.value.phoneNum = e.target.value.replace(/[^0-9]/g, "").replace(/\s/g, "");
   isPhoneChecked.value = false;
 };
-const onPasswordInputTrim = (e) => {
+const onPasswordInput = (e) => {
   form.value.currentPassword = form.value.currentPassword?.replace(/\s/g, "") || "";
   form.value.newPassword = form.value.newPassword?.replace(/\s/g, "") || "";
 };
@@ -314,6 +318,10 @@ const handleUpdate = async () => {
   const trimmedPhone = form.value.phoneNum?.trim();
   const currentPwd = form.value.currentPassword?.trim();
   const newPwd = form.value.newPassword?.trim();
+
+  if (isImageRemoved.value) {
+  formData.append("removeProfileImage", "true");
+  }
 
   if (!trimmedName) return alert("이름을 입력해주세요.");
   if (!trimmedEmail || !trimmedEmail.includes("@")) return alert("이메일을 정확히 입력해주세요.");
@@ -354,7 +362,7 @@ const handleUpdate = async () => {
       email: trimmedEmail,
       phoneNum: trimmedPhone,
       currentPassword: currentPwd,
-      // newPassword: newPwd,
+      newPassword: newPwd,
       address: {
         mainAddress: form.value.address.mainAddress,
         detailAddress: form.value.address.detailAddress,
@@ -363,6 +371,11 @@ const handleUpdate = async () => {
     };
 
     formData.append("memberData", new Blob([JSON.stringify(updateData)], { type: "application/json" }));
+
+    if (isImageRemoved.value) {
+      formData.append("removeProfileImage", "true");
+    }
+
     if (profileImage.value) {
       formData.append("profileImage", profileImage.value);
     }
@@ -371,7 +384,7 @@ const handleUpdate = async () => {
     alert("회원정보 수정 완료!");
     form.value.newPassword = "";
   } catch (error) {
-    alert("수정 실패: " + (error.response?.data?.message || error.message || "알 수 없는 오류"));
+    alert("수정 실패: " + (error.response?.data || error.message || "알 수 없는 오류"));
   }
 };
 

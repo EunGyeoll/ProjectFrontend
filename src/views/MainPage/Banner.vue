@@ -1,13 +1,14 @@
 <template>
-  <Swiper
-    :modules="[Autoplay, Pagination, Navigation]"
-    :slides-per-view="1"
-    :loop="true"
-    :autoplay="{ delay: 3000 }"
-    :pagination="{ clickable: true }"
-    :navigation="true"
-    class="banner-carousel"
-  >
+<Swiper
+  :modules="[Autoplay, Pagination, Navigation]"
+  :slides-per-view="3"
+  :space-between="20"  
+  :loop="true"
+  :autoplay="{ delay: 3000 }"
+  :pagination="{ clickable: true }"
+  :navigation="true"
+  class="banner-carousel"
+>
     <SwiperSlide v-for="(image, index) in images" :key="index">
       <img :src="image" class="carousel-image" alt="배너 이미지" />
     </SwiperSlide>
@@ -24,9 +25,11 @@ import 'swiper/css/pagination'
 import 'swiper/css/navigation'
 
 const images = [
-  new URL('@/assets/banner/banner1.jpeg', import.meta.url).href,
-  new URL('@/assets/banner/banner2.jpeg', import.meta.url).href,
-  new URL('@/assets/banner3.jpeg', import.meta.url).href
+  new URL('@/assets/banner/modisero.png', import.meta.url).href,
+  new URL('@/assets/banner/handmodi.png', import.meta.url).href,
+    new URL('@/assets/banner/airplanemodi.png', import.meta.url).href,
+  new URL('@/assets/banner/nightmzz.jpg', import.meta.url).href,
+  new URL('@/assets/banner/airplane.png', import.meta.url).href
 ]
 </script>
 

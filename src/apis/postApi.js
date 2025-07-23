@@ -1,10 +1,13 @@
 import axiosInstance from "@/plugin/axiosInstance";
 
-// 모든 상품 가져오기
+// 모든 게시글 가져오기
 export function fetchAllPosts(params) {
     return axiosInstance.get("/api/posts/list", { params });
   }
 
+export const fetchPosts = (params) => {
+  return axiosInstance.get('/api/posts/list', { params })
+}
   
 // 게시글 등록 (JSON 요청)
 export function createPost(postData) {
