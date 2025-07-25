@@ -8,6 +8,7 @@
     <!-- 메인 콘텐츠 -->
     <main class="main-content">
       <router-view />
+      <globalAlert />
     </main>
 
     <!-- 공통 푸터 -->
@@ -21,6 +22,7 @@ import Footer from './components/common/Footer.vue';
 import NavBar from "@/components/common/NavBar.vue";
 import { onMounted } from "vue";
 import { useAuthStore } from "@/stores/authStore";
+import globalAlert from './components/alert/globalAlert.vue';
 
 const authStore = useAuthStore();
 
