@@ -1,9 +1,5 @@
 <template>
-    <div class="post-container">
-      <!-- <div class="header">
-        <h2>커뮤니티</h2>
-        <router-link to="/posts/new" class="write-btn">글쓰기</router-link>
-      </div> -->
+  <div class="post-container">
     <div class="top-bar">
       <div class="category-scroll-wrapper">
         <div class="category-list">
@@ -11,111 +7,147 @@
           <button
             class="category-button"
             :class="{ active: selectedCategory === null }"
-            @click="fetchPosts"
+            @click="goToAll"
           >전체</button>
 
-      <!-- 카테고리 버튼들 -->
-      <button
-        v-for="cat in categories"
-        :key="cat.categoryId"
-        class="category-button"
-        :class="{ active: selectedCategory === cat.categoryId }"
-        @click="filterByCategory(cat.categoryId)"
-      >
-        {{ cat.categoryName }}
-      </button>
-    </div>
-  </div>
-
+          <!-- 카테고리 버튼들 -->
+          <button
+            v-for="cat in categories"
+            :key="cat.categoryId"
+            class="category-button"
+            :class="{ active: selectedCategory === cat.categoryId }"
+            @click="goToCategory(cat.categoryId)"
+          >
+            {{ cat.categoryName }}
+          </button>
+        </div>
+      </div>
 
       <router-link to="/posts/new" class="write-btn">글쓰기</router-link>
     </div>
-      <div v-if="posts.length === 0" class="empty">게시글이 없습니다.</div>
-  
-      <ul class="post-list" v-else>
-        <li v-for="post in posts" :key="post.postId" @click="goToDetail(post.postId)" class="post-item">
-      <div class="post-left">
-        <div class="post-header">
-          <img class="profile":src="post.profileImageUrl || defaultProfileImage"  alt="프로필 이미지" />
-      <div class="author-info">
-        <span class="nickname">{{ post.writerNickname }}</span>
-        <span class="dot">·</span>
-        <span class="date">{{ formatDate(post.postDate) }}</span>
-      </div>
-      </div>
 
-    <div class="title">{{ post.title }}</div>
+    <div v-if="posts.length === 0" class="empty">게시글이 없습니다.</div>
 
-    <div class="meta">
-      <span class="category">#{{ post.categoryName }}</span>
-    </div>
+    <ul class="post-list" v-else>
+      <li
+        v-for="post in posts"
+        :key="post.postId"
+        @click="goToDetail(post.postId)"
+        class="post-item"
+      >
+        <div class="post-left">
+          <div class="post-header">
+            <img class="profile" :src="post.profileImageUrl || defaultProfileImage" alt="프로필 이미지" />
+            <div class="author-info">
+              <span class="nickname">{{ post.writerNickname }}</span>
+              <span class="dot">·</span>
+              <span class="date">{{ formatDate(post.postDate) }}</span>
+            </div>
+          </div>
 
-    <div class="stats">
-      <span class="views" title="조회수">👁 {{ post.hitCount }}</span>
-      <span class="likes" title="좋아요">❤️ {{ post.likeCount }}</span>
-      <span class="comments" title="댓글">💬 {{ post.commentCount }}</span>
-    </div>
+          <div class="title">{{ post.title }}</div>
+
+          <div class="meta">
+            <span class="category">#{{ post.categoryName }}</span>
+          </div>
+
+          <div class="stats">
+            <span class="views">👁 {{ post.hitCount }}</span>
+            <span class="likes">❤️ {{ post.likeCount }}</span>
+            <span class="comments">💬 {{ post.commentCount }}</span>
+          </div>
+        </div>
+
+        <div v-if="post.representativeImagePath" class="thumbnail">
+          <img :src="post.representativeImagePath" alt="대표 이미지" />
+        </div>
+      </li>
+    </ul>
   </div>
+</template>
 
-    <!-- 오른쪽 썸네일 -->
-    <div v-if="post.representativeImagePath" class="thumbnail">
-      <img :src="post.representativeImagePath" alt="대표 이미지" />
-    </div>
-  </li>
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axiosInstance from '@/plugin/axiosInstance';
+import { fetchPostCategories } from '@/apis/postApi';
+defineOptions({ name: 'PostView' }) // 🔥 이거 꼭 넣어
 
+const route = useRoute();
+const router = useRouter();
 
-      </ul>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { fetchPostCategories } from '@/apis/postApi'
-  import axiosInstance from '@/plugin/axiosInstance';
-  
-  const defaultProfileImage = 'https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png';
+const defaultProfileImage = 'https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png';
 
-  const posts = ref([]);
-  const router = useRouter();
-  const categories = ref([]);
-  const selectedCategory = ref(null);
+const posts = ref([]);
+const categories = ref([]);
+const selectedCategory = ref(null);
 
-  const fetchCategories = async () => {
-    try {
-      const res = await fetchPostCategories(); 
-      categories.value = res.data;
-    } catch (err) {
-      console.error('카테고리 로딩 실패:', err);
-    }
-  };
-
-  const filterByCategory = async (categoryId) => {
-  selectedCategory.value = Number(categoryId); // ← 숫자로 강제 변환
+// 전체 게시글 조회
+const fetchAllPosts = async () => {
   try {
-    const res = await axiosInstance.get('/api/posts/list', {
-      params: { categoryId }
-    });
+    const res = await axiosInstance.get('/api/posts/list');
     posts.value = res.data.content || [];
+    selectedCategory.value = null;
   } catch (err) {
-    console.error('카테고리별 게시글 조회 실패:', err);
+    console.error('전체 게시글 조회 실패:', err);
   }
 };
 
-  const fetchPosts = async () => {
-    try {
-      const res = await axiosInstance.get('/api/posts/list'); // 전체글 조회
-      posts.value = res.data.content || [];
-    } catch (err) {
-      console.error('전체 게시글 조회 실패:', err);
-    }
-  };
-  
-  const goToDetail = (postId) => {
-    router.push(`/posts/${postId}`);
-  };
-  
-  const formatDate = (dateStr) => {
+// 카테고리별 게시글 조회
+const fetchPostsByCategoryId = async (categoryId) => {
+  console.log('🚀 [API 요청] categoryId =', categoryId);
+
+  try {
+    selectedCategory.value = Number(categoryId);
+    const res = await axiosInstance.get(`/api/posts/list`, {
+      params : {categoryId}
+      });
+    console.log('✅ [응답 성공] posts =', res.data); // 확인
+    posts.value = res.data.content || [];
+  } catch (err) {
+    console.error('❌ [API 에러] 카테고리별 게시글 조회 실패:', err);
+  }
+};
+
+
+
+// 라우팅된 쿼리 파라미터 처리
+const handleRouteChange = () => {
+  console.log('🧭 현재 경로:', route.fullPath);
+  console.log('🔍 route.query 전체:', route.query);
+
+  const categoryParam = route.query.categoryId;
+  console.log('📦 [쿼리 파라미터] categoryId =', categoryParam);
+
+  // 🚫 'undefined' 또는 NaN인 경우는 전체 조회
+  if (!categoryParam || categoryParam === 'undefined' || isNaN(Number(categoryParam))) {
+    console.log('📥 fetchAllPosts 호출됨');
+    fetchAllPosts();
+  } else {
+    console.log('📥 fetchPostsByCategoryId 호출됨');
+    fetchPostsByCategoryId(Number(categoryParam));
+  }
+};
+
+
+
+// 카테고리 클릭 시
+const goToCategory = (categoryId) => {
+  router.push({ path: '/posts', query: { categoryId } });
+};
+
+// 전체 버튼 클릭 시
+const goToAll = () => {
+  router.push({ path: '/posts' });
+};
+
+// 게시글 상세 이동
+const goToDetail = (postId) => {
+  router.push(`/posts/${postId}`);
+};
+
+// 날짜 포맷
+const formatDate = (dateStr) => {
   const postDate = new Date(dateStr);
   const now = new Date();
   const diffMs = now - postDate;
@@ -130,12 +162,25 @@
   return `${days}일 전`;
 };
 
-  
-  onMounted(() => {
-    fetchPosts();
-    fetchCategories();
-  });
-  </script>
+// 초기 로딩
+onMounted(async () => {
+  try {
+    const res = await fetchPostCategories();
+    categories.value = res.data;
+    handleRouteChange(); // query.categoryId  처리
+  } catch (err) {
+    console.error('카테고리 로딩 실패:', err);
+  };
+});
+
+// query.category 변경 감지
+watch(() => route.query.categoryId, (newVal) => {
+  console.log('👀 [watch 감지] categoryId 변경됨:', newVal);
+  handleRouteChange();
+});
+
+</script>
+
   
   <style scoped>
   .post-container {
