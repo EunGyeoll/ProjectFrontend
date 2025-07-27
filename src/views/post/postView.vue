@@ -15,8 +15,8 @@
             v-for="cat in categories"
             :key="cat.categoryId"
             class="category-button"
-            :class="{ active: selectedCategory === cat.categoryId }"
-            @click="goToCategory(cat.categoryId)"
+            :class="{ active: selectedCategory === cat.categoryName }"
+            @click="goToCategory(cat.categoryName)"
           >
             {{ cat.categoryName }}
           </button>
@@ -71,7 +71,8 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from '@/plugin/axiosInstance';
 import { fetchPostCategories } from '@/apis/postApi';
-defineOptions({ name: 'PostView' }) // 🔥 이거 꼭 넣어
+
+defineOptions({ name: 'PostView' });
 
 const route = useRoute();
 const router = useRouter();
@@ -80,68 +81,55 @@ const defaultProfileImage = 'https://pjtbucket.s3.ap-northeast-2.amazonaws.com/p
 
 const posts = ref([]);
 const categories = ref([]);
-const selectedCategory = ref(null);
+const selectedCategory = ref(route.query.category || null);
 
-// 전체 게시글 조회
-const fetchAllPosts = async () => {
+// 게시글 목록 조회
+const fetchPosts = async () => {
   try {
-    const res = await axiosInstance.get('/api/posts/list');
-    posts.value = res.data.content || [];
-    selectedCategory.value = null;
-  } catch (err) {
-    console.error('전체 게시글 조회 실패:', err);
-  }
-};
-
-// 카테고리별 게시글 조회
-const fetchPostsByCategoryId = async (categoryId) => {
-  console.log('🚀 [API 요청] categoryId =', categoryId);
-
-  try {
-    selectedCategory.value = Number(categoryId);
-    const res = await axiosInstance.get(`/api/posts/list`, {
-      params : {categoryId}
-      });
-    console.log('✅ [응답 성공] posts =', res.data); // 확인
+    const res = await axiosInstance.get('/api/posts/list', {
+      params: selectedCategory.value ? { category: selectedCategory.value } : {}
+    });
     posts.value = res.data.content || [];
   } catch (err) {
-    console.error('❌ [API 에러] 카테고리별 게시글 조회 실패:', err);
+    console.error('📛 게시글 불러오기 실패:', err);
   }
 };
 
+// 카테고리 목록 조회
+onMounted(async () => {
+  try {
+    const res = await fetchPostCategories();
+    categories.value = res.data;
+    await fetchPosts();
+  } catch (err) {
+    console.error('📛 카테고리 로딩 실패:', err);
+  }
+});
 
+// URL 쿼리(category) 변경 감지
+watch(
+  () => route.query.category,
+  (val) => {
+    selectedCategory.value = val || null;
+    fetchPosts();
+  }
+);
 
-// 라우팅된 쿼리 파라미터 처리
-const handleRouteChange = () => {
-  console.log('🧭 현재 경로:', route.fullPath);
-  console.log('🔍 route.query 전체:', route.query);
-
-  const categoryParam = route.query.categoryId;
-  console.log('📦 [쿼리 파라미터] categoryId =', categoryParam);
-
-  // 🚫 'undefined' 또는 NaN인 경우는 전체 조회
-  if (!categoryParam || categoryParam === 'undefined' || isNaN(Number(categoryParam))) {
-    console.log('📥 fetchAllPosts 호출됨');
-    fetchAllPosts();
-  } else {
-    console.log('📥 fetchPostsByCategoryId 호출됨');
-    fetchPostsByCategoryId(Number(categoryParam));
+// 카테고리 버튼 클릭 시
+const goToCategory = (categoryName) => {
+  if (selectedCategory.value !== categoryName) {
+    router.push({ path: '/posts', query: { category: categoryName } });
   }
 };
 
-
-
-// 카테고리 클릭 시
-const goToCategory = (categoryId) => {
-  router.push({ path: '/posts', query: { categoryId } });
-};
-
-// 전체 버튼 클릭 시
+// 전체 보기 클릭 시
 const goToAll = () => {
-  router.push({ path: '/posts' });
+  if (selectedCategory.value !== null) {
+    router.push({ path: '/posts' });
+  }
 };
 
-// 게시글 상세 이동
+// 상세 페이지 이동
 const goToDetail = (postId) => {
   router.push(`/posts/${postId}`);
 };
@@ -161,24 +149,6 @@ const formatDate = (dateStr) => {
   if (hours < 24) return `${hours}시간 전`;
   return `${days}일 전`;
 };
-
-// 초기 로딩
-onMounted(async () => {
-  try {
-    const res = await fetchPostCategories();
-    categories.value = res.data;
-    handleRouteChange(); // query.categoryId  처리
-  } catch (err) {
-    console.error('카테고리 로딩 실패:', err);
-  };
-});
-
-// query.category 변경 감지
-watch(() => route.query.categoryId, (newVal) => {
-  console.log('👀 [watch 감지] categoryId 변경됨:', newVal);
-  handleRouteChange();
-});
-
 </script>
 
   
