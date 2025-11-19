@@ -6,7 +6,7 @@ export const useAuthStore = defineStore("auth", {
     user: {
       id: "",
       role: "",
-      loggedIn: false,
+      isLoggedIn: false,
     },
     token: null,
   }),
@@ -19,7 +19,7 @@ export const useAuthStore = defineStore("auth", {
     saveAuth({ id, role, token }) {
       this.user.id = id;
       this.user.role = role;
-      this.user.loggedIn = true;
+      this.user.isLoggedIn = true;
       this.token = token;
 
       localStorage.setItem("userId", id);
@@ -29,7 +29,7 @@ export const useAuthStore = defineStore("auth", {
       axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`; // ✅
     },
     clearAuth() {
-      this.user = { id: "", role: "", loggedIn: false };
+      this.user = { id: "", role: "", isLoggedIn: false };
       this.token = null;
 
       localStorage.removeItem("userId");
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore("auth", {
       if (token && id && role) {
         this.user.id = id;
         this.user.role = role;
-        this.user.loggedIn = true;
+        this.user.isLoggedIn = true;
         this.token = token;
 
         axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`; // ✅

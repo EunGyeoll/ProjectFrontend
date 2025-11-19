@@ -11,8 +11,14 @@ const routes = [
   {
     path: '/mypage/:memberId',
     name: 'MyPage',
-    component: () => import('@/views/authentication/MyPage.vue'), // 예시
+    component: () => import('@/views/authentication/MyPage.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+  path: '/chat',
+  name: 'Chat',
+  component: () => import('@/views/chat/ChatView.vue'),
+  meta: { requiresAuth: true }
   },
   {
     path: '/items',

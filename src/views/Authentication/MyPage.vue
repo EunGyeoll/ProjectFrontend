@@ -1,13 +1,12 @@
 <template>
   <div class="mypage-container">
-    <h1>마이페이지</h1>
+
 
     <section class="profile-section">
-      <!-- <h2>회원정보 수정</h2> -->
       <form @submit.prevent="handleUpdate">
         <!-- ✅ 프로필 이미지 미리보기 + 버튼 -->
         <div class="form-group">
-          <label>프로필 이미지</label>
+          <label class="center-label">프로필 이미지</label>
           <div class="profile-image-wrapper">
             <img :src="profileImageSrc" alt="프로필 이미지" class="profile-preview" />
             <div class="image-button-group">
@@ -15,7 +14,12 @@
                 변경
                 <input type="file" @change="handleFileChange" accept="image/*" hidden />
               </label>
-              <button v-if="profileImagePreview" type="button" class="custom-btn outline" @click="removeImage">
+              <button
+                v-if="profileImagePreview"
+                type="button"
+                class="custom-btn outline"
+                @click="removeImage"
+              >
                 제거
               </button>
             </div>
@@ -67,8 +71,17 @@
             <input v-model="form.address.zipcode" placeholder="우편번호" readonly />
             <button type="button" @click="openAddressSearch">주소 검색</button>
           </div>
-          <input v-model="form.address.mainAddress" placeholder="기본 주소" readonly style="margin-top: 0.5rem;" />
-          <input v-model="form.address.detailAddress" placeholder="상세 주소" style="margin-top: 0.5rem;" />
+          <input
+            v-model="form.address.mainAddress"
+            placeholder="기본 주소"
+            readonly
+            style="margin-top: 0.5rem;"
+          />
+          <input
+            v-model="form.address.detailAddress"
+            placeholder="상세 주소"
+            style="margin-top: 0.5rem;"
+          />
         </div>
 
         <!-- 비밀번호 변경 -->
@@ -103,13 +116,14 @@
           <small style="color: #888;">비워두면 기존 비밀번호가 유지됩니다.</small>
         </div>
 
-
         <!-- 저장 버튼 -->
         <button type="submit">회원정보 수정</button>
       </form>
     </section>
   </div>
 </template>
+
+
 
 
 <script setup>
@@ -428,6 +442,20 @@ onMounted(async () => {
 
   
   <style scoped>
+.page-title {
+text-align: center;
+font-size: 1.7rem;
+margin-bottom: 1.5rem;
+color: #333;
+}
+
+.center-label {
+  display: block;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+  
   /* ✅ 전체 페이지 레이아웃 */
   .mypage-container {
     display: flex;
