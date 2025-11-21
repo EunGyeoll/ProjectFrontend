@@ -15,7 +15,12 @@
           class="chat-item"
           :class="{ active: currentReceiver === room.chatPartner }"
         >
-          <img :src="room.partnerProfileImgUrl" class="chat-profile" />
+          <img
+            :src="room.partnerProfileImgUrl || defaultProfileImage"
+            @error="e => e.target.src = defaultProfileImage"
+            class="chat-profile"
+            :alt="`${room.chatPartnerNickname || room.chatPartner}님의 프로필 이미지`"
+          />
 
           <div class="chat-info">
             <div class="chat-top">
@@ -95,8 +100,10 @@
 import { ref, onMounted, nextTick } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import { chatApi } from "@/apis/chatApi";
-import { Stomp } from "@stomp/stompjs"; // ⭐ 반드시 필요
-// import SockJS from "sockjs-client"; // 지금은 사용 안함
+import { Stomp } from "@stomp/stompjs";
+
+
+const defaultProfileImage = "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
 
 const auth = useAuthStore();
 const myId = auth.user.id;
@@ -122,13 +129,61 @@ const newChatPartnerId = ref("");
 // =======================
 const formatTime = (timestamp) => {
   if (!timestamp) return "";
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return "";
 
-  const h = String(date.getHours()).padStart(2, "0");
-  const m = String(date.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
+  // "2025-01-22 14:33:55" → "2025-01-22T14:33:55"
+  const iso = timestamp.replace(" ", "T");
+  const date = new Date(iso);
+
+  if (isNaN(date.getTime())) return "";
+
+  const now = new Date();
+
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  const isYesterday = (() => {
+    const y = new Date(now);
+    y.setDate(now.getDate() - 1);
+    return (
+      date.getFullYear() === y.getFullYear() &&
+      date.getMonth() === y.getMonth() &&
+      date.getDate() === y.getDate()
+    );
+  })();
+
+  // 오전/오후 계산
+  const hours24 = date.getHours();
+  const ampm = hours24 < 12 ? "오전" : "오후";
+  const hours12 = hours24 % 12 || 12;
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const timeText = `${ampm} ${hours12}:${minutes}`;
+
+  if (isToday) {
+    return timeText;
+  }
+
+  if (isYesterday) {
+    return `어제 ${timeText}`;
+  }
+
+  // 올해인지 체크
+  const isThisYear = date.getFullYear() === now.getFullYear();
+
+  if (isThisYear) {
+    return `${date.getMonth() + 1}월 ${date.getDate()}일 ${timeText}`;
+  }
+
+  // 그 외는 연도까지 표시
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${
+    date.getDate()
+  }일 ${timeText}`;
 };
+
+
+
+
 
 // =======================
 // STOMP 연결

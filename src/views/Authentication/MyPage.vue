@@ -8,7 +8,12 @@
         <div class="form-group">
           <label class="center-label">프로필 이미지</label>
           <div class="profile-image-wrapper">
-            <img :src="profileImageSrc" alt="프로필 이미지" class="profile-preview" />
+            <img
+              :src="profileImageSrc"
+              :alt="`${form.nickName || form.memberId}님의 프로필 이미지`"
+              class="profile-preview"
+              @error="e => e.target.src = defaultProfileImage"
+            />
             <div class="image-button-group">
               <label class="custom-btn">
                 변경
@@ -160,7 +165,7 @@ const original = ref({
 
 const profileImage = ref(null);
 const profileImagePreview = ref("");
-const defaultImage =  "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
+const defaultProfileImage =  "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
 const isImageRemoved = ref(false);
 
 // 중복 체크 상태
@@ -174,7 +179,7 @@ const profileImageSrc = computed(() => {
   const val = profileImagePreview.value;
 
   if (!val || val.trim() === "" || val === "null" || val === "undefined") {
-    return defaultImage;
+    return defaultProfileImage;
   }
 
   // ✅ S3 URL이든 blob이든 둘 다 허용
@@ -182,7 +187,7 @@ const profileImageSrc = computed(() => {
     return val;
   }
 
-  return defaultImage;
+  return defaultProfileImage;
 });
 
 
