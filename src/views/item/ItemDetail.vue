@@ -7,21 +7,34 @@
         alt="대표 이미지"
         @click="openImageModalByUrl(item.representativeImagePath)"
       />
-      <div class="info">
-        <h1 class="title">{{ item.itemName }}</h1>
-        <p class="price">{{ formatPrice(item.price) }}원</p>
-        <p class="category">카테고리: {{ item.categoryName }}</p>
+<div class="info">
+  <div>
+    <h1 class="title">{{ item.itemName }}</h1>
 
-        <!-- 찜하기 하트 버튼 -->
-        <div class="item-like">
-          <font-awesome-icon
-            :icon="[liked === true ? 'fas' : 'far', 'heart']"
-            :class="['heart-icon', { liked: liked === true, disabled: !isLoggedIn }]"
-            @click="handleHeartClick"
-          />
-          <span class="like-count">{{ favoriteCount }}</span>
-        </div>
-      </div>
+    <p class="price">{{ formatPrice(item.price) }}원</p>
+
+    <p class="category">{{ item.categoryName }}</p>
+
+    <div class="item-like">
+      <font-awesome-icon
+        :icon="[liked ? 'fas' : 'far', 'heart']"
+        class="heart-icon"
+        :class="{ liked }"
+        @click="handleHeartClick"
+      />
+      <span class="like-count">{{ favoriteCount }}</span>
+    </div>
+  </div>
+
+  <!-- 버튼은 항상 아래 -->
+  <button
+    class="chat-btn"
+    @click="goToChat"
+    :disabled="!isLoggedIn"
+  >
+    💬 판매자에게 채팅하기
+  </button>
+</div>
     </div>
 
     <div class="description">
@@ -61,6 +74,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useRouter } from "vue-router";
 import axiosInstance from '@/plugin/axiosInstance';
 import {
   checkFavorite,
@@ -71,6 +85,9 @@ import {
 
 const item = ref(null);
 const route = useRoute();
+const router = useRouter();
+
+
 const liked = ref(null);
 const likedChecked = ref(false);
 const favoriteCount = ref(0);
@@ -89,6 +106,36 @@ const fetchItem = async () => {
     console.error("❌ 상품 조회 실패", err);
   }
 };
+
+const goToChat = () => {
+  if (!isLoggedIn.value) {
+    alert("채팅은 로그인 후 이용할 수 있어요!");
+    return;
+  }
+  if (!item.value) {
+    alert("상품 정보를 불러오는 중입니다. 잠시만 기다려주세요.");
+    return;
+  }
+  const sellerId = item.value.sellerId; // ⚠️ 필드명 다르면 수정
+  const sellerNickname = item.value.sellerNickname || item.value.sellerId;
+
+  if (!sellerId) {
+    alert("판매자 정보를 찾을 수 없습니다.");
+    return;
+  }
+
+
+router.push({
+  path: "/chat",
+  query: {
+    user: sellerId,
+    nickname: sellerNickname
+  }
+});
+
+
+};
+
 
 const checkFavoriteStatus = async () => {
   try {
@@ -178,8 +225,9 @@ const formatPrice = (price) => {
   return price?.toLocaleString() || '0';
 };
 
-onMounted(() => {
-  fetchItem();
+onMounted(async () => {
+  await fetchItem();                 // ⬅️ item 로드 기다림
+  console.log("📌 item 데이터:", item.value);
   fetchFavoriteCount();
 
   const token = localStorage.getItem("token");
@@ -188,7 +236,7 @@ onMounted(() => {
     checkFavoriteStatus();
   }
 
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
@@ -199,296 +247,97 @@ onUnmounted(() => {
 
 <style scoped>
 .item-detail-container {
-  max-width: 800px;
-  margin: auto;
-  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
 }
 
 .item-header {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 36px;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
 }
 
 .item-image {
-  width: 200px;
-  height: 200px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  border-radius: 18px;
+  background: #f5f5f5;
   cursor: pointer;
 }
 
 .info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 12px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #222;
+  margin: 0 0 14px;
 }
 
 .price {
-  font-size: 18px;
-  color: #e46d8c;
-  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #222;
+  margin: 0 0 12px;
 }
 
 .category {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 4px;
+  display: inline-block;
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f3f3f3;
+  color: #666;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.chat-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 14px;
+  background: #8e7cff;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.chat-btn:hover {
+  background: #7b61ff;
+}
+
+.chat-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .item-like {
-  font-size: 24px;
-  cursor: pointer;
-  user-select: none;
-  color: #ccc;
-  transition: color 0.2s;
-  margin-top: 10px;
-}
-
-
-.heart {
-  color: #ccc;
-}
-
-/* ::v-deep(.heart.liked) {
-  color: #e46d8c;
-} */
-:deep(.heart.liked) {
-  color: #e46d8c;
-}
-
-.item-like:hover .heart {
-  color: #e46d8c;
-}
-
-
-.description {
-  margin-top: 32px;
-}
-
-.description h2 {
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-.description p {
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.gallery {
-  margin-top: 32px;
-}
-
-.image-list {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.gallery-image {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  cursor: pointer;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
+  margin-top: 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal-content {
-  position: relative;
-}
-
-.modal-image {
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 8px;
-}
-
-.close-button {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  background: #fff;
-  border: none;
-  font-size: 20px;
-  border-radius: 50%;
-  padding: 4px 8px;
-  cursor: pointer;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #aaa;
-}
-
-.item-detail-container {
-  max-width: 800px;
-  margin: auto;
-  padding: 24px;
-}
-
-.item-header {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.item-image {
-  width: 200px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  cursor: pointer;
-}
-
-.info {
-  flex: 1;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 12px;
-}
-
-.price {
-  font-size: 18px;
-  color: #e46d8c;
-  margin-bottom: 8px;
-}
-
-.category {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 4px;
-}
-
-
-.description {
-  margin-top: 32px;
-}
-
-.description h2 {
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-.description p {
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.gallery {
-  margin-top: 32px;
-}
-
-.image-list {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.gallery-image {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  cursor: pointer;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal-content {
-  position: relative;
-}
-
-.modal-image {
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 8px;
-}
-
-.close-button {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  background: #fff;
-  border: none;
-  font-size: 20px;
-  border-radius: 50%;
-  padding: 4px 8px;
-  cursor: pointer;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #aaa;
-}
-
-.item-like {
-  font-size: 24px;
-  cursor: pointer;
-  user-select: none;
-  color: #ccc;
-  transition: color 0.2s;
-}
-
-.heart.liked {
-  color: #e46d8c;
-}
-
-.item-like:hover .heart {
-  color: #e46d8c;
-}
-
-.like-count {
-  margin-left: 6px;
-  font-size: 14px;
-  color: #888;
+  gap: 6px;
 }
 
 .heart-icon {
-  font-size: 24px;
+  font-size: 25px;
   cursor: pointer;
   color: #ccc;
-  transition: color 0.2s;
-  vertical-align: middle; 
+  transition: 0.2s;
 }
 
 .heart-icon.liked {
@@ -499,13 +348,64 @@ onUnmounted(() => {
   opacity: 0.4;
 }
 
+.like-count {
+  font-size: 14px;
+  color: #888;
+}
+
+.description,
+.gallery {
+  margin-top: 36px;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.description h2,
+.gallery h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 16px;
+}
+
+.description p {
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.image-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gallery-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid #eee;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.gallery-image:hover {
+  transform: translateY(-2px);
+}
+
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: #aaa;
+}
+
+/* 이미지 확대 모달 */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -515,120 +415,65 @@ onUnmounted(() => {
 
 .modal-content {
   position: relative;
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 90vw;
+  max-height: 90vh;
 }
 
 .modal-content img {
   max-width: 100%;
-  height: auto;
-  max-height: 80vh;
-  border-radius: 8px;
+  max-height: 82vh;
   object-fit: contain;
+  border-radius: 12px;
 }
 
 .close-btn {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: -12px;
+  right: -12px;
   background: #fff;
   color: #333;
   border: none;
   border-radius: 50%;
   font-size: 24px;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .nav-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   border: none;
-  font-size: 36px;
-  width: 40px;
-  height: 40px;
+  font-size: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   cursor: pointer;
   color: #333;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .nav-btn.prev {
-  left: -60px;
+  left: -58px;
 }
 
 .nav-btn.next {
-  right: -60px;
+  right: -58px;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  outline: none;
-}
+@media (max-width: 768px) {
+  .item-header {
+    grid-template-columns: 1fr;
+  }
 
-.modal-content {
-  position: relative;
-  max-width: 90%;
-  max-height: 90%;
-}
+  .nav-btn.prev {
+    left: 10px;
+  }
 
-.modal-content img {
-  max-width: 100%;
-  height: auto;
-  max-height: 80vh;
-  border-radius: 8px;
-  object-fit: contain;
+  .nav-btn.next {
+    right: 10px;
+  }
 }
-
-.close-btn {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #fff;
-  color: #333;
-  border: none;
-  border-radius: 50%;
-  font-size: 24px;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.7);
-  border: none;
-  font-size: 36px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  color: #333;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.nav-btn.prev {
-  left: -60px;
-}
-
-.nav-btn.next {
-  right: -60px;
-}
-
 </style>

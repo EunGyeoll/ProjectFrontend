@@ -11,7 +11,17 @@
 
     <h1 class="title">{{ post.title }}</h1>
     <div class="meta">#{{ post.categoryName }}</div>
-    <div class="content" v-html="post.content"></div>
+    <div class="content" v-html="cleanContent"></div>
+
+    <div class="gallery" v-if="contentImages.length">
+      <img
+        v-for="(img, i) in contentImages"
+        :key="i"
+        :src="img"
+        class="gallery-img"
+        @click="openImageModal(i)"
+      />
+    </div>
 
 
     <!-- 이미지 리스트 -->
@@ -28,10 +38,10 @@
     <!-- 이미지 확대 모달 -->
     <div v-if="showImageModal" class="modal-overlay" @click.self="closeImageModal">
       <div class="modal-content">
-        <img :src="post.imagePaths[currentImageIndex]" alt="확대 이미지" />
+        <img :src="contentImages[currentImageIndex]" alt="확대 이미지" />
         <button class="close-btn" @click="closeImageModal">×</button>
-        <button class="nav-btn prev" @click.stop="prevImage">‹</button>
-        <button class="nav-btn next" @click.stop="nextImage">›</button>
+        <button class="nav-btn prev" @click.stop="prevImage" v-if="contentImages.length > 1">‹</button>
+        <button class="nav-btn next" @click.stop="nextImage" v-if="contentImages.length > 1">›</button>
       </div>
     </div>
 
@@ -53,18 +63,46 @@
       <button class="delete-btn" @click="deletePost">삭제</button>
     </div>
 
-    <div class="comment-form">
-      <textarea v-model="newComment" placeholder="댓글을 입력하세요"></textarea>
-      <input type="file" @change="handleFileChange($event, 'comment')" />
-      <button @click="submitComment">댓글 작성</button>
-    </div>
+<div class="comment-form">
+  <textarea
+    v-model="newComment"
+    placeholder="댓글을 입력하세요"
+  ></textarea>
+
+  <div class="comment-form-bottom">
+    <label class="file-label">
+      이미지 첨부
+      <input
+        type="file"
+        accept="image/*"
+        @change="handleFileChange($event, 'comment')"
+      />
+    </label>
+
+    <span class="file-name" v-if="commentFile">
+      {{ commentFile.name }}
+    </span>
+
+    <button class="comment-submit-btn" @click="submitComment">
+      댓글 작성
+    </button>
+  </div>
+</div>
 
     <div class="comments">
       <div v-for="comment in comments" :key="comment.commentId" class="comment-block">
         <div class="comment comment-root">
           <div class="comment-content">
+            <div class="comment-header">
+            <img
+              class="comment-profile"
+              :src="comment.profileImageUrl || defaultProfileImage"
+              alt="프로필"
+            />
+            <div class="comment-info">
             <strong>{{ comment.writerName }}</strong> · {{ formatDate(comment.commentDate) }}
-
+            </div>
+          </div>
             <div v-if="editingState.commentId === comment.commentId">
               <textarea v-model="editingState.content" class="edit-textarea" />
               <div v-if="comment.imageUrl && !editingState.removeImage">
@@ -102,9 +140,17 @@
 
           <div class="child-comments" v-for="child in comment.childComments" :key="child.commentId">
             <div class="comment">
+                <div class="comment-header">
+                <img
+                  class="comment-profile"
+                  :src="child.profileImageUrl || defaultProfileImage"
+                  alt="프로필"
+                />
+                <div class="comment-info">
+                  <strong>{{ child.writerName }}</strong> · {{ formatDate(child.commentDate) }}
+                </div>
+              </div>
               <div class="comment-content">
-                <strong>{{ child.writerName }}</strong> · {{ formatDate(child.commentDate) }}
-
                 <div v-if="editingState.commentId === child.commentId">
                   <textarea v-model="editingState.content" class="edit-textarea" />
                   <div v-if="child.imageUrl && !editingState.removeImage">
@@ -210,21 +256,35 @@
     }
   };
   
-  const updateImageListFromContent = () => {
-    if (post.value?.content) {
-      const div = document.createElement('div'); // 가상의 div태그 생성
-      const imgTags = div.querySelectorAll('img');  // img 태그들만 골라냄
-      
-      contentImages.value = Array.from(imgTags).map((img) => img.src); // src 속성만 추출해 배열로 저장
-    }
-  };
+const cleanContent = ref('');
+
+const updateImageListFromContent = () => {
+  if (!post.value?.content) return;
+
+  const div = document.createElement('div');
+  div.innerHTML = post.value.content;
+
+  const imgTags = div.querySelectorAll('img');
+
+  // 이미지 따로 저장
+  contentImages.value = Array.from(imgTags).map((img) => img.src);
+
+  // 🔥 본문에서는 제거
+  imgTags.forEach((img) => img.remove());
+
+  cleanContent.value = div.innerHTML;
+};
 
 
 
   const fetchCommentsList = async (postId) => {
     try {
       const res = await fetchComments(postId);
+          console.log('🔥 원본 댓글 데이터:', res.data);
+
       comments.value = buildCommentTree(res.data);
+          console.log('🔥 트리 구조 댓글:', comments.value);
+
     } catch (err) {
       console.error('댓글 조회 실패:', err);
     }
@@ -420,17 +480,20 @@ const closeImageModal = () => {
 };
 
 const prevImage = () => {
-  if (!post.value?.imagePaths?.length) return;
+  const len = contentImages.value.length
+  if (!len) return
+
   currentImageIndex.value =
-    (currentImageIndex.value - 1 + post.value.imagePaths.length) %
-    post.value.imagePaths.length;
-};
+    (currentImageIndex.value - 1 + len) % len
+}
 
 const nextImage = () => {
-  if (!post.value?.imagePaths?.length) return;
+  const len = contentImages.value.length
+  if (!len) return
+
   currentImageIndex.value =
-    (currentImageIndex.value + 1) % post.value.imagePaths.length;
-};
+    (currentImageIndex.value + 1) % len
+}
 
 // 게시글 수정 페이지로
 const goToEditPage = () => {
@@ -457,24 +520,13 @@ const deletePost = async () => {
     alert('삭제 중 오류가 발생했습니다');
   }
 };
-
-  // 이미지 클릭 시 모달 열기
-  setTimeout(() => {
-    const images = document.querySelectorAll('.content img');
-    images.forEach((img, idx) => {
-      img.addEventListener('click', () => {
-        currentImageIndex.value = idx;
-        showImageModal.value = true;
-      });
-    });
-  }, 0);
   </script>
   
   
   
   
-  
-  <style scoped>
+
+<style scoped>
 .post-detail-container {
   max-width: 800px;
   margin: auto;
@@ -510,12 +562,14 @@ const deletePost = async () => {
   color: #222;
 }
 
-.date, .hit {
+.date,
+.hit {
   font-size: 13px;
   color: #aaa;
 }
 
 /* 제목, 메타, 본문 */
+
 .title {
   font-size: 22px;
   font-weight: bold;
@@ -530,129 +584,245 @@ const deletePost = async () => {
 
 .content {
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.7;
   white-space: pre-wrap;
+  color: #222;
 }
 
-/* 이미지 리스트 */
-.images {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
+/* 갤러리 */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+  margin: 24px 0 32px;
 }
 
-.post-image {
-  width: 180px;
-  aspect-ratio: 1 / 1;
+.gallery-img {
+  width: 100%;
+  height: 160px;
   object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  border-radius: 16px;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-.post-image:hover {
-  transform: scale(1.02);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+  background: #f5f5f5;
 }
 
-/* 공통 버튼 스타일 */
+.gallery-img:hover {
+  transform: translateY(-3px);
+  opacity: 0.95;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* 공통 버튼 */
+
 button {
   font-family: inherit;
 }
 
-.btn,
-.reply-btn,
-.edit-btn,
-.delete-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn {
-  background-color: #ff84a2;
-  color: #fff;
-}
-
-.btn:hover {
-  background-color: #e46d8c;
-}
-
-.reply-btn,
-.edit-btn,
-.delete-btn {
-  background-color: #f2f2f2;
-  color: #333;
-}
-
-.reply-btn:hover,
-.edit-btn:hover,
-.delete-btn:hover {
-  background-color: #ddd;
-}
+/* 버튼 라인 */
 
 .btn-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
-/* 댓글 폼 */
-.comment-form,
+/* 기본 버튼 */
+
+.reply-btn,
+.edit-btn,
+.delete-btn {
+  padding: 7px 12px;
+  font-size: 13px;
+  border-radius: 999px;
+  border: none;
+  background: #f3f3f3;
+  color: #444;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.reply-btn:hover,
+.edit-btn:hover,
+.delete-btn:hover {
+  background: #e5e5e5;
+}
+
+/* 댓글 작성 폼 */
+
+.comment-form {
+  margin-top: 32px;
+  padding: 14px 16px;
+  border: 1px solid #eee;
+  border-radius: 22px;
+  background: #fafafa;
+  transition: 0.2s;
+}
+
+.comment-form:focus-within {
+  border-color: #ccc;
+  background: #fff;
+}
+
+.comment-form textarea {
+  width: 100%;
+  min-height: 40px;
+  max-height: 140px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: inherit;
+}
+
+.comment-form-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+.file-label {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eee;
+  font-size: 12px;
+  cursor: pointer;
+  color: #555;
+  white-space: nowrap;
+}
+
+.file-label:hover {
+  background: #e5e5e5;
+}
+
+.file-label input {
+  display: none;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 11px;
+  color: #888;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.comment-submit-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: #111;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.comment-submit-btn:hover {
+  background: #333;
+}
+
+/* 댓글 */
+
+.comments {
+  margin-top: 40px;
+}
+
+.comment-block {
+  padding: 20px 0;
+  border-top: 1px solid #eee;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.comment-profile {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.comment-info {
+  font-size: 13px;
+  color: #777;
+}
+
+.comment-info strong {
+  font-weight: 700;
+  color: #222;
+}
+
+.comment-content {
+  padding: 14px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+/* 댓글 이미지 */
+
+.comment-image {
+  display: block;
+  margin-top: 12px;
+  max-width: 180px;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid #eee;
+}
+
+/* 대댓글 */
+
+.child-comments {
+  margin-left: 24px;
+  margin-top: 12px;
+  padding-left: 14px;
+  border-left: 2px solid #eee;
+}
+
+/* 답글 작성 */
+
 .reply-form {
-  margin-top: 24px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f7f7f7;
 }
 
-textarea,
+.reply-form textarea,
 .edit-textarea {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
   resize: vertical;
   font-size: 14px;
+  line-height: 1.5;
   font-family: inherit;
   box-sizing: border-box;
 }
 
-/* 댓글 목록 */
-.comments {
-  margin-top: 32px;
-}
+/* 좋아요 */
 
-.comment-block {
-  padding: 16px 0;
-  border-top: 1px solid #eee;
-}
-
-.comment-content {
-  font-size: 14px;
-  color: #333;
-}
-
-.comment-image {
-  margin-top: 8px;
-  max-width: 120px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
-/* 대댓글 */
-.child-comments {
-  margin-left: 20px;
-  padding-left: 12px;
-  border-left: 2px solid #f0f0f0;
-  margin-top: 12px;
-}
-
-/* 좋아요 영역 */
 .post-like {
-  margin-top: 16px;
+  margin-top: 18px;
   font-size: 24px;
   user-select: none;
 }
@@ -680,85 +850,174 @@ textarea,
   color: #666;
 }
 
-/* 모달 */
+/* =========================
+   이미지 모달
+========================= */
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
   z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.86);
+  backdrop-filter: blur(8px);
 }
 
 .modal-content {
   position: relative;
-  max-width: 90%;
-  max-height: 90%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .modal-content img {
-  max-width: 100%;
-  max-height: 80vh;
+  max-width: min(92vw, 1100px);
+  max-height: 84vh;
   object-fit: contain;
-  border-radius: 8px;
+
+  border-radius: 0px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
 }
 
-/* 모달 버튼 */
-.close-btn {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #fff;
-  color: #333;
-  border: none;
-  border-radius: 50%;
-  font-size: 24px;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
+/* 공통 버튼 */
+.close-btn,
 .nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.7);
+  position: fixed;
+  z-index: 1001;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border: none;
-  font-size: 36px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  backdrop-filter: blur(14px);
+
   cursor: pointer;
-  color: #333;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: 0.2s ease;
+
+  padding: 0;
+  line-height: 1;
+}
+
+/* X 버튼 */
+.close-btn {
+  top: 28px;
+  right: 64px;
+
+  width: 44px;
+  height: 44px;
+
+  font-size: 30px;
+  font-weight: 300;
+}
+
+/* 좌우 버튼 */
+.nav-btn {
+  top: 50%;
+
+  width: 52px;
+  height: 52px;
+
+  font-size: 46px;
+  font-weight: 200;
+
+  transform: translateY(-50%);
 }
 
 .nav-btn.prev {
-  left: -60px;
+  left: 32px;
 }
 
 .nav-btn.next {
-  right: -60px;
+  right: 32px;
 }
 
-/* 로딩 메시지 */
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-50%) scale(1.08);
+}
+
+/* 로딩 */
+
 .loading {
   text-align: center;
   padding: 40px;
   color: #aaa;
 }
-@media (max-width: 600px) {
-  .post-image {
-    width: 100%;
+
+/* =========================
+   반응형
+========================= */
+/* 반응형 */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 12px;
   }
-  .btn-row {
-    justify-content: center;
+
+  .modal-content img {
+    max-width: 100%;
+    max-height: 78vh;
+    border-radius: 14px;
+  }
+
+  .close-btn {
+    top: 18px;
+    right: 24px;
+
+    width: 40px;
+    height: 40px;
+
+    font-size: 26px;
+  }
+
+  .nav-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 34px;
+  }
+
+  .nav-btn.prev {
+    left: 12px;
+  }
+
+  .nav-btn.next {
+    right: 12px;
   }
 }
-  </style>
-  
+
+@media (max-width: 480px) {
+  .modal-content img {
+    max-height: 72vh;
+  }
+
+  .close-btn {
+    top: 14px;
+    right: 18px;
+  }
+
+  .nav-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 30px;
+  }
+}
+</style>

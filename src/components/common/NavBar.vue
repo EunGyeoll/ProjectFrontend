@@ -1,48 +1,69 @@
 <template>
   <nav class="navbar">
     <div class="nav-container">
-      <button class="menu-toggle" @click="isOpen = !isOpen">☰ 메뉴</button>
+      <router-link class="nav-link" to="/">홈</router-link>
 
-      <div class="nav-items" :class="{ open: isOpen }">
-        <router-link class="nav-item" to="/">홈</router-link>
+      <!-- 커뮤니티 -->
+      <div
+        class="nav-dropdown"
+        :class="{ open: openDropdown === 'community' }"
+      >
+        <button
+          class="nav-link nav-button"
+          @click="toggleDropdown('community')"
+        >
+          커뮤니티
+        </button>
 
-        <!-- 커뮤니티 -->
-        <div class="nav-item dropdown">
-          <router-link class="dropdown-toggle" to="/posts">커뮤니티</router-link>
-          <div class="dropdown-menu">
+        <div class="dropdown-menu">
           <router-link
             v-for="cat in postCategories"
             :key="cat.categoryId"
             class="dropdown-item"
-                :to="`/posts?category=${cat.categoryName}`">
+            :to="`/posts?category=${cat.categoryName}`"
+            @click="openDropdown = null"
+          >
             {{ cat.categoryName }}
           </router-link>
-          </div>
         </div>
+      </div>
 
-        <!-- 아이템 -->
-        <div class="nav-item dropdown">
-          <router-link class="dropdown-toggle" to="/items">아이템</router-link>
-          <div class="dropdown-menu">
-            <template v-for="cat in itemCategoryTree" :key="cat.categoryId">
-              <router-link
-                class="dropdown-item"
-                :to="`/items?category=${cat.categoryName}`"
-              >
-                {{ cat.categoryName }}
-              </router-link>
-              <router-link
-                v-for="child in cat.children"
-                :key="child.categoryId"
-                class="dropdown-item child-item"
-                :to="`/items?category=${child.categoryName}`"
-              >
-                └ {{ child.categoryName }}
-              </router-link>
-            </template>
-          </div>
+      <!-- 아이템 -->
+      <div
+        class="nav-dropdown"
+        :class="{ open: openDropdown === 'item' }"
+      >
+        <button
+          class="nav-link nav-button"
+          @click="toggleDropdown('item')"
+        >
+          아이템
+        </button>
+
+        <div class="dropdown-menu">
+          <template
+            v-for="cat in itemCategoryTree"
+            :key="cat.categoryId"
+          >
+            <router-link
+              class="dropdown-item"
+              :to="`/items?category=${cat.categoryName}`"
+              @click="openDropdown = null"
+            >
+              {{ cat.categoryName }}
+            </router-link>
+
+            <router-link
+              v-for="child in cat.children"
+              :key="child.categoryId"
+              class="dropdown-item child-item"
+              :to="`/items?category=${child.categoryName}`"
+              @click="openDropdown = null"
+            >
+              {{ child.categoryName }}
+            </router-link>
+          </template>
         </div>
-
       </div>
     </div>
   </nav>
@@ -52,9 +73,15 @@
 import { ref, onMounted } from 'vue';
 import axiosInstance from '@/plugin/axiosInstance';
 
-const isOpen = ref(false);
 const postCategories = ref([]);
 const itemCategoryTree = ref([]);
+
+const openDropdown = ref(null);
+
+const toggleDropdown = (menu) => {
+  openDropdown.value =
+    openDropdown.value === menu ? null : menu;
+};
 
 const fetchPostCategories = async () => {
   try {
@@ -82,121 +109,188 @@ onMounted(() => {
 
 <style scoped>
 .navbar {
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 12px 0;
-  font-weight: 500;
-  font-size: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #eee;
 }
 
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
+
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
 }
 
-.menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.nav-items {
+.nav-link {
+  font-size: 14px;
+  
   display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  position: relative;
-}
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
 
-.nav-item {
+  border-radius: 999px;
+
   color: #333;
   text-decoration: none;
-  transition: color 0.3s;
+  font-size: 15px;
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.nav-link:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
+.nav-link.router-link-active,
+.nav-link.router-link-exact-active {
+  background: #f1efff;
+  color: #111;
+    background: transparent;
+
+}
+
+.nav-dropdown {
   position: relative;
+  height: 40px;
+  display: flex;
+  align-items: center;
 }
 
-.nav-item:hover {
-  color: #ff84a2;
-}
-
-.router-link-active {
-  color: #ff84a2;
-}
-
-.dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  cursor: pointer;
-}
-
-.dropdown-menu {
-  display: none;
+.nav-dropdown::after {
+  content: "";
   position: absolute;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  top: 100%;
   left: 0;
-  z-index: 10;
-  flex-direction: column;
-  min-width: 120px;
+  top: 100%;
+  width: 100%;
+  height: 10px;
 }
 
-.dropdown:hover .dropdown-menu {
+.nav-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* dropdown */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+
+  min-width: 170px;
+  padding: 8px;
+
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+
+  z-index: 200;
+}
+
+.nav-dropdown:hover .dropdown-menu {
   display: flex;
 }
 
 .dropdown-item {
-  padding: 8px 12px;
-  text-decoration: none;
+  padding: 9px 12px;
+  border-radius: 10px;
+
   color: #333;
+  text-decoration: none;
+  font-size: 14px;
   white-space: nowrap;
+
+  transition: 0.2s ease;
 }
 
 .dropdown-item:hover {
-  background-color: #f9f9f9;
-  color: #8E7CFF;
+  background: #f7f5ff;
+  color: #111;
 }
 
-.dropdown-item.child-item {
-  padding-left: 24px;
-  font-size: 14px;
+.child-item {
+  padding-left: 22px;
   color: #666;
+  font-size: 13px;
 }
 
-/* 모바일 반응형 */
+/* 데스크탑 hover */
+@media (min-width: 769px) {
+  .nav-dropdown:hover .dropdown-menu {
+    display: flex;
+  }
+}
+
+
+/* 모바일 */
 @media (max-width: 768px) {
-  .menu-toggle {
-    display: block;
+  .navbar {
+    overflow-x: auto;
   }
 
-  .nav-items {
+  .navbar::-webkit-scrollbar,
+  .nav-container::-webkit-scrollbar {
     display: none;
-    flex-direction: column;
-    gap: 12px;
   }
 
-  .nav-items.open {
+  .nav-container {
+    height: 48px;
+    padding: 0 12px;
+    gap: 6px;
+
+    justify-content: flex-start;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .nav-link {
+    flex-shrink: 0;
+    height: 34px;
+    padding: 0 13px;
+    font-size: 14px;
+  }
+
+  .nav-dropdown {
+    flex-shrink: 0;
+    height: 48px;
+  }
+
+  /* 모바일에서는 hover용 빈 영역 제거 */
+  .nav-dropdown::after {
+    display: none;
+  }
+
+  /* 모바일에서는 hover가 아니라 클릭(open)일 때만 열림 */
+  .dropdown-menu,
+  .nav-dropdown:hover .dropdown-menu {
+    display: none;
+  }
+
+  .nav-dropdown.open .dropdown-menu {
     display: flex;
   }
 
-  .dropdown-menu {
-    position: static;
-    border: none;
-    padding-left: 12px;
+  .nav-link.router-link-active,
+  .nav-link.router-link-exact-active {
+    color: #8E7CFF;
+    background: transparent;
   }
 }
-
-.nav-item,
-.dropdown-toggle {
-  color: #333;
-  text-decoration: none;
-}
-
 </style>

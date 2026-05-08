@@ -41,11 +41,15 @@
             <div class="author-info">
               <span class="nickname">{{ post.writerNickname }}</span>
               <span class="dot">·</span>
-              <span class="date">{{ formatDate(post.postDate) }}</span>
-            </div>
+              <span class="date">{{ formatDate(post.createdDate) }}</span>
+            </div>  
           </div>
 
           <div class="title">{{ post.title }}</div>
+
+          <p class="preview">
+            {{ post.contentPreview }}
+          </p>
 
           <div class="meta">
             <span class="category">#{{ post.categoryName }}</span>
@@ -221,15 +225,55 @@ const formatDate = (dateStr) => {
 
 
 /* 게시글 리스트 */
+/* 게시글 리스트 */
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .post-list li.post-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid #eee;
+
+  padding: 18px 16px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  background: #fff;
+  border: 1px solid #eee;
   cursor: pointer;
+  transition: 0.2s ease;
 }
+
+.post-list li.post-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+  border-color: #ded8ff;
+}
+
+.post-left {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 썸네일 */
+.thumbnail {
+  width: 110px;
+  height: 90px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f5f5f5;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 
 .post-left {
   flex: 1;
@@ -276,6 +320,18 @@ const formatDate = (dateStr) => {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-bottom: 4px;
+}
+
+.preview {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #777;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* 카테고리 */
@@ -334,18 +390,13 @@ const formatDate = (dateStr) => {
   }
 
   .post-list li.post-item {
-    flex-direction: column;
     align-items: flex-start;
   }
 
   .thumbnail {
-    width: 100%;
-    height: auto;
-    aspect-ratio: auto;
-    margin-top: 8px;
+    width: 88px;
+    height: 72px;
   }
 }
-
-
   </style>
   

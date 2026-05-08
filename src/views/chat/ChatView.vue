@@ -1,6 +1,6 @@
 <template>
   <div class="chat-container">
-    <!-- 왼쪽: 채팅방 목록 -->
+    <!-- 왼쪽: 채팅 목록 -->
     <aside class="chat-list">
       <header class="chat-list-header">
         <span>채팅</span>
@@ -11,48 +11,38 @@
         <div
           v-for="room in chatRooms"
           :key="room.chatPartner"
-          @click="openRoom(room)"
           class="chat-item"
+          @click="openRoom(room)"
           :class="{ active: currentReceiver === room.chatPartner }"
         >
           <img
-            :src="room.partnerProfileImgUrl || defaultProfileImage"
-            @error="e => e.target.src = defaultProfileImage"
+            :src="room.partnerProfileImgUrl || defaultProfile"
+            @error="e => e.target.src = defaultProfile"
             class="chat-profile"
             :alt="`${room.chatPartnerNickname || room.chatPartner}님의 프로필 이미지`"
           />
 
           <div class="chat-info">
             <div class="chat-top">
-              <span class="chat-name">
-                {{ room.chatPartnerNickname || room.chatPartner }}
-              </span>
-
+              <span class="chat-name">{{ room.chatPartnerNickname || room.chatPartner }}</span>
               <span class="chat-time">{{ formatTime(room.timestamp) }}</span>
             </div>
 
             <div class="chat-bottom">
               <span class="chat-preview">{{ room.lastMessage }}</span>
-
-              <span v-if="room.unreadCount > 0" class="chat-unread">
-                {{ room.unreadCount }}
-              </span>
+              <span v-if="room.unreadCount > 0" class="chat-unread">{{ room.unreadCount }}</span>
             </div>
           </div>
         </div>
 
-        <div v-if="chatRooms.length === 0" class="empty-rooms">
-          아직 채팅방이 없어요.
-        </div>
+        <div v-if="chatRooms.length === 0" class="empty-rooms">아직 채팅방이 없어요.</div>
       </div>
     </aside>
 
     <!-- 오른쪽: 채팅 영역 -->
     <section class="chat-room">
       <header class="chat-room-header">
-        <span>
-          {{ currentReceiverNickname || "대화 상대를 선택하세요" }}
-        </span>
+        <span>{{ currentReceiverNickname || "대화 상대를 선택하세요" }}</span>
       </header>
 
       <div class="messages" ref="messagesBox">
@@ -73,9 +63,7 @@
           :disabled="!currentReceiver"
           placeholder="메시지를 입력하세요"
         />
-        <button @click="sendMessage" :disabled="!currentReceiver">
-          전송
-        </button>
+        <button @click="sendMessage" :disabled="!currentReceiver">전송</button>
       </footer>
     </section>
 
@@ -83,10 +71,7 @@
     <div v-if="showNewChatModal" class="modal-backdrop" @click.self="closeNewChatModal">
       <div class="modal">
         <h3>새 채팅 시작</h3>
-        <input
-          v-model="newChatPartnerId"
-          placeholder="상대방 ID를 입력하세요"
-        />
+        <input v-model="newChatPartnerId" placeholder="상대방 ID를 입력하세요" />
         <div class="modal-actions">
           <button @click="closeNewChatModal">취소</button>
           <button @click="startNewChat">시작하기</button>
@@ -98,16 +83,19 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { chatApi } from "@/apis/chatApi";
 import { Stomp } from "@stomp/stompjs";
 
-
-const defaultProfileImage = "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
-
+const route = useRoute();
 const auth = useAuthStore();
+
 const myId = auth.user.id;
 const token = auth.token;
+
+const defaultProfile =
+  "https://pjtbucket.s3.ap-northeast-2.amazonaws.com/profile/profileblack.png";
 
 const chatRooms = ref([]);
 const messages = ref([]);
@@ -118,97 +106,54 @@ const currentReceiverNickname = ref("");
 const messageInput = ref("");
 const messagesBox = ref(null);
 
-let stompClient = null; // ⭐ 전역에서 단 하나만 유지
+let stompClient = null;
 
-// 새 채팅 모달 상태
 const showNewChatModal = ref(false);
 const newChatPartnerId = ref("");
 
-// =======================
-// 시간 포맷
-// =======================
+// 시간 포맷 : 오늘/어제/올해/그 외
 const formatTime = (timestamp) => {
   if (!timestamp) return "";
-
-  // "2025-01-22 14:33:55" → "2025-01-22T14:33:55"
   const iso = timestamp.replace(" ", "T");
-  const date = new Date(iso);
-
-  if (isNaN(date.getTime())) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
 
   const now = new Date();
-
   const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
+    d.toDateString() === now.toDateString();
+  const isYesterday =
+    new Date(now.setDate(now.getDate() - 1)).toDateString() === d.toDateString();
 
-  const isYesterday = (() => {
-    const y = new Date(now);
-    y.setDate(now.getDate() - 1);
-    return (
-      date.getFullYear() === y.getFullYear() &&
-      date.getMonth() === y.getMonth() &&
-      date.getDate() === y.getDate()
-    );
-  })();
+  const hh = d.getHours();
+  const ampm = hh < 12 ? "오전" : "오후";
+  const h = hh % 12 || 12;
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const timeText = `${ampm} ${h}:${m}`;
 
-  // 오전/오후 계산
-  const hours24 = date.getHours();
-  const ampm = hours24 < 12 ? "오전" : "오후";
-  const hours12 = hours24 % 12 || 12;
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const timeText = `${ampm} ${hours12}:${minutes}`;
+  if (isToday) return timeText;
+  if (isYesterday) return `어제 ${timeText}`;
 
-  if (isToday) {
-    return timeText;
-  }
-
-  if (isYesterday) {
-    return `어제 ${timeText}`;
-  }
-
-  // 올해인지 체크
-  const isThisYear = date.getFullYear() === now.getFullYear();
-
-  if (isThisYear) {
-    return `${date.getMonth() + 1}월 ${date.getDate()}일 ${timeText}`;
-  }
-
-  // 그 외는 연도까지 표시
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${
-    date.getDate()
-  }일 ${timeText}`;
+  if (d.getFullYear() === new Date().getFullYear())
+    return `${d.getMonth() + 1}월 ${d.getDate()}일 ${timeText}`;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${timeText}`;
 };
 
-
-
-
-
-// =======================
 // STOMP 연결
-// =======================
 const connectStomp = () => {
-  if (!token) {
-    console.warn("토큰이 없어 STOMP 연결이 불가");
-    return;
-  }
+  if (!token) return;
 
-  const socket = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
+  const protocol = location.protocol === "https:" ? "wss" : "ws";
+  const socket = new WebSocket(`${protocol}://${location.host}/ws/chat?token=${token}`);
 
-  // ⭐ 이 stompClient만 사용함
   stompClient = Stomp.over(socket);
-
-  // 디버그 메시지 제거
   stompClient.debug = () => {};
 
   stompClient.connect({}, () => {
-    console.log("✅ STOMP 연결 성공");
+    console.log("STOMP 연결 성공")  
 
     stompClient.subscribe(`/sub/chat/private/${myId}`, (frame) => {
       const data = JSON.parse(frame.body);
 
-      // 현재 열려 있는 방이면 메시지 표시
       if (
         data.sender === currentReceiver.value ||
         data.receiver === currentReceiver.value
@@ -217,65 +162,51 @@ const connectStomp = () => {
         scrollToBottom();
       }
 
-      // 채팅방 목록 업데이트
       loadChatRooms();
     });
   });
+
+  stompClient.onWebSocketClose = () => {
+    console.warn("⚠ WebSocket 끊김 — 3초 후 재연결");
+    setTimeout(connectStomp, 3000);
+  };
+
+  stompClient.onStompError = err => console.error("STOMP ERROR:", err);
+
 };
 
-// =======================
-// 채팅방 목록 불러오기
-// =======================
+
+
+// 채팅방 목록
 const loadChatRooms = async () => {
   try {
     const res = await chatApi.getChatRooms(myId);
     chatRooms.value = res.data.content;
-  } catch (err) {
-    console.error("채팅방 목록 오류", err);
+  } catch (e) {
+    console.error(e);
   }
 };
 
-// =======================
-// 특정 방 열기
-// =======================
+// 채팅방 열기
 const openRoom = async (room) => {
   currentReceiver.value = room.chatPartner;
-  currentReceiverNickname.value =
-    room.chatPartnerNickname || room.chatPartner;
-
-  room.unreadCount = 0; // UI 상에서 임시로만 0
-
+  currentReceiverNickname.value = room.chatPartnerNickname || room.chatPartner;
+  room.unreadCount = 0;
   await loadHistory();
 };
 
-// =======================
-// 히스토리 불러오기
-// =======================
+// 히스토리 로드
 const loadHistory = async () => {
   if (!currentReceiver.value) return;
-  try {
-    const res = await chatApi.getChatHistory(myId, currentReceiver.value);
-    messages.value = res.data.content;
-    scrollToBottom();
-  } catch (err) {
-    console.error("히스토리 오류", err);
-  }
+  const res = await chatApi.getChatHistory(myId, currentReceiver.value);
+  messages.value = res.data.content;
+  scrollToBottom();
 };
 
-// =======================
 // 메시지 전송
-// =======================
 const sendMessage = () => {
-  if (!messageInput.value.trim()) return;
-  if (!currentReceiver.value) {
-    alert("대화 상대를 선택하세요.");
-    return;
-  }
-
-  if (!stompClient || !stompClient.connected) {
-    alert("서버와 연결되지 않았습니다.");
-    return;
-  }
+  if (!messageInput.value.trim() || !currentReceiver.value) return;
+  if (!stompClient || !stompClient.connected) return;
 
   const msg = {
     sender: myId,
@@ -284,55 +215,31 @@ const sendMessage = () => {
   };
 
   stompClient.send("/pub/chat/message", {}, JSON.stringify(msg));
-
-  messages.value.push({
-    ...msg,
-    timestamp: new Date().toISOString(),
-  });
-
+  messages.value.push({ ...msg, timestamp: new Date().toISOString() });
   messageInput.value = "";
   scrollToBottom();
 };
 
-// =======================
-// 스크롤 맨 아래
-// =======================
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (messagesBox.value) {
-      messagesBox.value.scrollTop = messagesBox.value.scrollHeight;
-    }
-  });
-};
+// 스크롤 아래로
+const scrollToBottom = () =>
+  nextTick(() => (messagesBox.value.scrollTop = messagesBox.value.scrollHeight));
 
-// =======================
-// 새 채팅 모달
-// =======================
-const openNewChatModal = () => {
-  newChatPartnerId.value = "";
-  showNewChatModal.value = true;
-};
-
-const closeNewChatModal = () => {
-  showNewChatModal.value = false;
-};
+// 새 채팅
+const openNewChatModal = () => (newChatPartnerId.value = "", showNewChatModal.value = true);
+const closeNewChatModal = () => (showNewChatModal.value = false);
 
 const startNewChat = () => {
-  const targetId = newChatPartnerId.value.trim();
-  if (!targetId) {
-    alert("상대방 ID를 입력하세요.");
-    return;
-  }
+  const target = newChatPartnerId.value.trim();
+  if (!target) return;
 
-  let room = chatRooms.value.find((r) => r.chatPartner === targetId);
-
+  let room = chatRooms.value.find((r) => r.chatPartner === target);
   if (!room) {
     room = {
-      chatPartner: targetId,
-      chatPartnerNickname: targetId,
+      chatPartner: target,
+      chatPartnerNickname: route.query.nickname || target,
       lastMessage: "",
       timestamp: null,
-      partnerProfileImgUrl: "https://via.placeholder.com/40?text=U",
+      partnerProfileImgUrl: null,
       unreadCount: 0,
     };
     chatRooms.value.unshift(room);
@@ -342,14 +249,40 @@ const startNewChat = () => {
   closeNewChatModal();
 };
 
-// =======================
-// 컴포넌트 mount
-// =======================
-onMounted(() => {
-  loadChatRooms();
-  connectStomp();
+// 초기 로딩
+onMounted(async () => {
+  await loadChatRooms();
+
+  const target = route.query.user;
+  const nickname = route.query.nickname;
+
+  if (target) {
+    let room = chatRooms.value.find((r) => r.chatPartner === target);
+    if (!room) {
+      room = {
+        chatPartner: target,
+        chatPartnerNickname: nickname || target,
+        lastMessage: "",
+        timestamp: null,
+        partnerProfileImgUrl: null,
+        unreadCount: 0,
+      };
+      chatRooms.value.unshift(room);
+    }
+    currentReceiverNickname.value = nickname || target;
+    await openRoom(room);
+  }
+
+  // auth.token 변경 시 WebSocket 자동 연결
+  watch(() => auth.token, (val) => {
+    if (val) connectStomp();
+  });
+
+  // 로그인 유지된 상태라면 즉시 연결
+  if (auth.token) connectStomp();
 });
 </script>
+
 
 <style scoped>
 /* 전체 레이아웃 */
